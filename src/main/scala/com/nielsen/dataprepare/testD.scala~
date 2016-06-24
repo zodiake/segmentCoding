@@ -1,0 +1,67 @@
+package dataprepare
+import scala.io.Source
+import java.io._
+import org.apache.spark.SparkConf
+import org.apache.spark.SparkContext
+import org.apache.spark.SparkContext._
+import java.nio.charset.StandardCharsets
+import org.apache.spark.rdd._
+import org.apache.hadoop.fs.FileUtil
+
+object testD {
+
+  def main(args: Array[String]): Unit = {
+  
+    val conf = new SparkConf()
+    conf.setAppName("RawDataSplit")
+    val sc = new SparkContext(conf)
+    
+    val rawfile = sc.textFile(args(0)).map(_.split(",\"")).filter(_.size == 6)
+                      .filter(x => x(4).split("\",").size == 2)
+    
+    val itemfile = sc.textFile(args(1)).map(_.split(",")).filter(_.size == 7)
+    
+    val fi0 = rawfile.map(x => x(0) + "," + x(1).split("\",").head.replace(",","") + ","
+                  + x(1).split("\",").reverse.head + "," 
+                  + x(2).replace("\"","") + "," + x(3).replace("\"",""))
+    
+    
+    val fi4 = rawfile.map(_(4).split("\","))//.filter(_.size == 2)
+          .map(x => x(0).replace(",","")+ "," + x(1))//.foreach(println)
+    
+    val fi5 = rawfile.map(_(5).replace("\",","*%$#").replace(",","").replace("*%$#",","))//.foreach(println)
+        
+    val fi = fi0.zip(fi4).map(x => x._1 + "," + x._2).zip(fi5).map(x => x._1 + "," + x._2)
+        .map(x => if(x.endsWith(",")){x + " "} else {x})
+        .map(_.split(",").toList).filter(x => x.size == 21 ||x.size == 20 )
+        .filter(_(18).size == 10)
+        .map(x => x(18).substring(0,7).replace("-","14") :: x)
+        .filter(_(5) == "零食/坚果/特产")
+    
+    val result = List()    
+        
+    for(raw <- fi){
+      val bis = itemfile.filter(x => x(2) + x(3) + x(4) == raw(10) + raw(11) + raw(13))
+                        .filter(_(0) == "BIS")
+      if(bis.count != 0){
+        raw(0) + "," + raw(17) :: result
+      }              
+    }
+          
+    val rr = sc.parallelize(result)
+    
+    rr.saveAsTextFile(args(2))
+    
+    
+  }
+  
+  def selectionitem(x:List[String]):List[String]={
+    if(x.size > 16){
+    List(x(0),x(1),x(2),x(3),x(4),x(5),x(6),x(7),x(8),x(9),x(10),
+                  x(11),x(13),x(20))
+    }else {
+      List(x(0),x(1),x(2),x(3),x(4),x(5),x(6),x(7),x(8),x(9),x(10),
+                  x(11),x(12),x(13))
+    }
+  }
+}
