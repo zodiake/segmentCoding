@@ -1,18 +1,18 @@
 package com.spark
 
-import scala.collection.mutable.ListBuffer
-
-import org.apache.spark.SparkConf
-import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
-
 import com.nielsen.model.IdAndKeyWord
-import com.nielsen.model.Par
-import com.nielsen.model.SegIdWithIndexAndSegName
-import com.nielsen.packsize._
 
 object Coding {
   def main(args: Array[String]): Unit = {
 
+    val segConfigBroadcast = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SEGCONF.txt")).getLines().map(_.split(",")).filter(_ (3).toUpperCase == "BRAND").toList
+
+    val c = segConfigBroadcast.groupBy(_ (1)).map {
+      case (key, value) => {
+        val set = value.map(i => IdAndKeyWord(i(0), i(5), i.last))
+        (key, set)
+      }
+    }
+    println(c.size)
   }
 }

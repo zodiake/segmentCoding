@@ -19,7 +19,7 @@ object totalcoding_1 {
     //val catlist = args(0).split(",")
     val raw_data_path = List("")
     //val catlist = List("BIS")
-    val catlist = sc.textFile("D:/wangqi/testFile/SEGCONF").cache()
+    val catlist = sc.textFile("D:/wangqi/testFile/SEGCONF1").cache()
     val config = catlist.map(_.split(",")).collect().toList.map(_ (1)).distinct
 
     //val catlist = sc.textFile("D:/wangqi/testFile/SEGCONF").map(_.split(",")).collect().toList.map(_(1)).distinct
@@ -29,7 +29,7 @@ object totalcoding_1 {
 
       val templist = Array[String]()
 
-      val source = sc.textFile("D:/wangqi/testFile/part-00001")
+      val source = sc.textFile("D:/wangqi/testFile/sp1")
       //val months = source.map(_.split(",")).filter(_.size > 2).map(item => (1, item(1).substring(0, 4) + item(1).substring(6, 8))).aggregateByKey(initialSet)((k, v) => k + v, (s1, s2) => s1 ++= s2).values
       val months = source.map(_.split(",")).filter(_.size > 2).map(item => item(1).substring(0, 4) + item(1).substring(6, 8)).distinct.collect().toList
       val cateConf = sc.textFile("D:/wangqi/testFile/CATCONF").map(_.split(",")).map { case Array(a, b) => (a, b) }.collectAsMap
@@ -76,7 +76,7 @@ object totalcoding_1 {
           val subbrand_namelist = configFile.filter(_ (3).contains("SUBBRAND")).map(_ (3)).distinct
           val configFileNew = configFile.filter(x => x(3) != "CATEGORY")
           val brand_conf = itemmaster_brand(catcode, configFileNew) //List[List[(String, String)]] --eccbrandlist, eccshortdesc, eccmanulist, ecbrandlist, ecmanulist, parentidlist
-          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, "BRAND", KRAFile, cateCodeCombine, segNoCombine, brand_conf))
+          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, "SEGMENT", KRAFile, cateCodeCombine, segNoCombine, brand_conf))
 
           if (false) {
             var itemIdLst = List[String]() //change for remove muti packsize result 
@@ -114,7 +114,7 @@ object totalcoding_1 {
             ree = tempre.map(_._2.mkString("\n")) ++ ree
           }
         }
-        ree.filter(_ != "").collect()
+        ree.filter(_ != "").collect().foreach(println)
         i = i + 1
       }
 

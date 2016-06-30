@@ -55,8 +55,8 @@ class codingFunc extends java.io.Serializable {
   /**
     * MKWLC multi keyword list coding
     *
-    * @itemdesc target item description
-    * @multiwordlist multi key word list
+    * @param itemdesc target item description
+    * @param multiwordlist multi key word list
     */
 
   def MKWLC(itemdesc: String, multiwordlist: List[List[(String, String)]]): String = {
