@@ -9,7 +9,7 @@ sealed trait Par {
   }
 
   def keyWordContainChinese(s: String) = {
-    b.pattern.matcher(s).matches()
+    s.exists(Character.UnicodeScript.of(_) == Character.UnicodeScript.HAN)
   }
 
   def parse(desc: String): Int
@@ -162,4 +162,4 @@ object Par {
 
 case class SegIdWithIndexAndSegName(segmentId: String, segmentName: String, index: List[Int], parentNo: String)
 
-case class IdAndKeyWord(id: String, keyWord: String, parentNo: String="")
+case class IdAndKeyWord(id: String, keyWord: String, parentNo: String = "")

@@ -92,7 +92,7 @@ object PacksizeCoding {
 
     }
 
-  def getPacksize(description: String, packsize: String): Option[Double] = {
-    try { Some(numberExtract(description, packsize).max) } catch { case _: Throwable => None }
+  def getPackSize(description: String, packSize: String): Option[Double] = {
+    try { Some(numberExtract(description, packSize).max) } catch { case _: Throwable => None }
   }
 }

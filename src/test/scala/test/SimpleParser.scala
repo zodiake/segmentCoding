@@ -1,8 +1,7 @@
 package test
 
-import org.scalatest.FunSuite
-import com.nielsen.model.Par
 import com.nielsen.model.SimplePar
+import org.scalatest.FunSuite
 
 class SimpleParser extends FunSuite {
   val desc = "申通包邮 法国 MM豆MMS巧克力豆机M&amp;MS 圣诞老人糖果机 全新款式"
@@ -37,4 +36,31 @@ class SimpleParser extends FunSuite {
     assert(b.pattern.matcher("巧克力").matches() == true)
     assert(simpleParser.parse(desc) == 14)
   }
-} 
+
+  test("unicode regex") {
+    val desc = "正品安心妈妈1031PP宽口径抗菌奶瓶210/300mL不含双酚A带"
+    val regex ="""(.*)(安心妈妈)(.*)""".r
+    val brand = desc match {
+      case regex(_, brand, _) => brand
+    }
+    assert(brand=="安心妈妈")
+  }
+
+  test("english regex"){
+    val desc="Amama安心妈妈带烘干恒温智能婴儿奶瓶消毒锅蒸汽消毒器防"
+    val regex ="""(.*)(Amama)(\p{L}*)""".r
+    val brand = desc match {
+      case regex(_, brand, _) => brand
+    }
+    assert(brand=="Amama")
+  }
+
+  test("number"){
+    val desc="Amamap"
+    val regex ="""(.*)(Amama)(\W*)""".r
+    val brand = desc match {
+      case regex(_, brand, _) => brand
+    }
+    assert(brand=="Amama")
+  }
+}
