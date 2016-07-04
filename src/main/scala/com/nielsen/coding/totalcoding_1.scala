@@ -10,7 +10,16 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scala.util.control.Breaks._
 
 object totalcoding_1 {
-
+  /*
+             --args(0): catogory code(多个用逗号分割，全部用ALL)
+             --args(1): segment config file path
+             --args(2): input file path
+             --args(3): category config file path
+             --args(4): output file path
+             --args(5): coding 的类型（BRAND,SUBBRAND,PACKSIZE,SEGMENT）全部用ALL
+             --args(6): KRASegment config file path
+             *
+             */
   def main(args: Array[String]) {
     System.setProperty("hadoop.home.dir", "C:\\winutil\\");
     val conf = new SparkConf().setMaster("local").setAppName("My App")

@@ -58,7 +58,6 @@ object BrandCoding {
       i => (i(1).toUpperCase(), i(0))
     }.toMap).value
 
-
     val c = sc.broadcast(brandConfig.groupBy(_ (1)).map {
       case (key, value) => {
         val set = value.map(i => IdAndKeyWord(i(0), i(5), i.last))
@@ -96,17 +95,17 @@ object BrandCoding {
         }
         val b = filterParentId(brandDesc, extractBrand(c.get(item.cateCode).get))
 
-        val re = s"${item.id},20,${categoryCacheList(item.cateCode)},${item.cateCode},${item.perCode},${item.storeCode}"
+        val categoryString = s"${item.id},20,${categoryCacheList(item.cateCode)},${item.cateCode},${item.perCode},${item.storeCode}"
 
         b.toList.sortBy(i => (i.index.head, i.desc.length())) match {
           case Nil => {
             val string = s"${item.id},2126,TAOBAO_ZZZOTHER,TAOBAO_ZZZOTHER,${item.perCode},${item.storeCode}"
-            s"${string}${separator}${re}"
+            s"${string}${separator}${categoryString}"
           }
           case h :: t => {
             val c = itemCacheList.get(h.id).get
             val string = s"${item.id},2126,${h.id},${c},${item.perCode},${item.storeCode}"
-            s"${string}${separator}${re}"
+            s"${string}${separator}${categoryString}"
           }
         }
       }

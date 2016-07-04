@@ -29,17 +29,24 @@ object PackSizeCode {
     } else s
   }
 
-  def main(arg: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = {
     System.setProperty("hadoop.home.dir", "C:\\winutil\\");
-    val conf = new SparkConf().setMaster("local").setAppName("My App")
+    val conf = new SparkConf().setMaster("local[2]").setAppName("My App")
     conf.setAppName("PackCoding")
     val sc = new SparkContext(conf)
 
     val segConfig = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SEGCONF.txt"))
-      .getLines().map(_.split(",")).filter(_ (3).toUpperCase == "PACKSIZE").toList
+      .getLines().map(_.split(",")).toList
+    val packConfig = segConfig.filter(_ (3).toUpperCase == "PACKSIZE")
+    val categoryConfig = segConfig.filter(_ (3).toUpperCase == "CATEGORY")
+    val separator = sys.props("line.separator")
 
-    val packBroadcast = sc.broadcast(segConfig.map {
+    val packBroadcast = sc.broadcast(packConfig.map {
       i => (i(1), Pack(i(2), i(5), i(10)))
+    }.toMap).value
+
+    val categoryCacheList = sc.broadcast(categoryConfig.map {
+      i => (i(1).toUpperCase(), i(0))
     }.toMap).value
 
     val cateConfBroadCast = sc.broadcast(scala.io.Source.fromInputStream(getClass.getResourceAsStream("/CATCONF.txt")).getLines().map(_.split(",")).map {
@@ -55,7 +62,7 @@ object PackSizeCode {
       }
     }
 
-    val sourceRDD = sc.textFile("D:/wangqi/testFile/part-00001")
+    val sourceRDD = sc.textFile(args(0))
       .map(prepareCateCode)
       .map(_.split(","))
       .map(i => Item(i(0), i(1), s"${i(2)} ${i(3)} ${i(4)},${i(5)}".toUpperCase, s"${i(1)}".substring(0, 8), s"${i(1)}".substring(8, 13)))
@@ -82,18 +89,23 @@ object PackSizeCode {
 
     val result = p.map {
       case (item, code, (pack, Some(number))) => {
+        val categoryString = s"${item.id},20,${categoryCacheList(item.cateCode)},${item.cateCode},${item.perCode},${item.storeCode}"
         s"${item.id},${code},${number}${pack},${number}${pack},${item.perCode},${item.storeCode}"
       }
       case (item, code, (i, None)) => {
+        val categoryString = s"${item.id},20,${categoryCacheList(item.cateCode)},${item.cateCode},${item.perCode},${item.storeCode}"
         if (item.cateCode == "IMF") {
-          s"${item.id},${code},0G,0G,${item.perCode},${item.storeCode}"
+          val string = s"${item.id},${code},0G,0G,${item.perCode},${item.storeCode}"
+          s"${string}${separator}${categoryString}"
         } else if (item.cateCode == "DIAP") {
-          s"${item.id},${code},0P,0P,${item.perCode},${item.storeCode}"
+          val string = s"${item.id},${code},0P,0P,${item.perCode},${item.storeCode}"
+          s"${string}${separator}${categoryString}"
         } else {
-          s"${item.id},${code},UNKNOWN,UNKNOWN,${item.perCode},${item.storeCode}"
+          val string = s"${item.id},${code},UNKNOWN,UNKNOWN,${item.perCode},${item.storeCode}"
+          s"${string}${separator}${categoryString}"
         }
       }
     }
-    result.take(200).foreach(println)
+    result.take(20).foreach(println)
   }
 }
