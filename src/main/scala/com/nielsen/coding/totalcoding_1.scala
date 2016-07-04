@@ -20,7 +20,7 @@ object totalcoding_1 {
     val raw_data_path = List("")
     //val catlist = List("BIS")
     val catlist = sc.textFile("D:/wangqi/testFile/SEGCONF1").cache()
-    val config = catlist.map(_.split(",")).collect().toList.map(_ (1)).distinct
+    val config = List("PETFOOD")
 
     //val catlist = sc.textFile("D:/wangqi/testFile/SEGCONF").map(_.split(",")).collect().toList.map(_(1)).distinct
     //val des_data_path = List("aa_RESULT")

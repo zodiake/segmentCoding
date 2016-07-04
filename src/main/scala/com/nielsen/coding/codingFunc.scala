@@ -7,8 +7,8 @@ class codingFunc extends java.io.Serializable {
   /**
     * KWLC keyword list coding
     *
-    * @itemdesc target item description
-    * @wordlist key word list
+    * @param itemdesc target item description
+    * @param wordlist key word list
     * @return 该条目属于哪个品牌
     */
 
@@ -36,7 +36,7 @@ class codingFunc extends java.io.Serializable {
     // 判断是否存在英文品牌被找到
     //re1.foreach(println)
     if (!re1.map(x => findEng(x._2._2)).filter(_ != "").isEmpty) {
-      result_f = result_f.filter(x => !(itemdesc_e.indexOf(x._2._2) < 0 && findEng(x._2._2) != "")) //按照完整的英文单词筛选
+      result_f = result_f.filter(x => itemdesc_e.indexOf(x._2._2) > 0 && findEng(x._2._2) == "") //按照完整的英文单词筛选
     }
     //result_f.foreach(println)
     if (!result_f.isEmpty) {
@@ -108,7 +108,7 @@ class codingFunc extends java.io.Serializable {
         } else {
           //itemdesc_e.indexOf(x)   //英文则按全字匹配
           try {
-            itemdesc_e_1(targetdesc)
+            itemdesc_e_1(x)
           } catch {
             case t: Exception => -1 // TODO: handle error
           }
