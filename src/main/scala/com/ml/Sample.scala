@@ -58,7 +58,6 @@ object Sample {
       .map(i => i.split(",")(4))
       .mapPartitions(formated)
 
-
     println("-------------------tokens---------------------------")
     sourcrRDD.take(20).foreach(println)
     val common = sourcrRDD.flatMap(i => i.map(j => (j, 1))).reduceByKey(_ + _)

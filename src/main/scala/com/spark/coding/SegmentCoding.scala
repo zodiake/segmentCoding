@@ -13,9 +13,8 @@ case class ItemSegment(cateCode: String, id: String, brandDescription: String, p
 object SegmentCoding {
 
   def main(args: Array[String]): Unit = {
-
     System.setProperty("hadoop.home.dir", "C:\\winutil\\")
-    val conf = new SparkConf().setMaster("local").setAppName("My App")
+    val conf = new SparkConf().setMaster("local[2]").setAppName("My App")
     conf.setAppName("BrandCoding")
     val sc = new SparkContext(conf)
     val segmentConfigRDD = sc.textFile("D:/wangqi/testFile/SEGCONF").map(_.split(",")).cache

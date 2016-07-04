@@ -79,11 +79,11 @@ object Logistic {
     val tf = hashingTF.transform(train)
     val idf = new IDF(minDocFreq = 2).fit(tf)
     val tfidf = idf.transform(tf)
-    val c = tfidf.map(v => {
+    val trainVector = tfidf.map(v => {
       v.asInstanceOf[SV]
     })
 
-    val trainData = c.zip(trainLabel).map(i => LabeledPoint(CategoryUtils.categoryToInt(i._2), i._1.toDense))
+    val trainData = trainVector.zip(trainLabel).map(i => LabeledPoint(CategoryUtils.categoryToInt(i._2), i._1.toDense))
 
     val model = new LogisticRegressionWithLBFGS()
       .setNumClasses(95)
