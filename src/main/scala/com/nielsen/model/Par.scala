@@ -1,6 +1,16 @@
 package com.nielsen.model
 
-sealed trait Par {
+/*
+  @param segmentId
+  @param par splitted keyword
+  @param index
+  @param parentNo
+ */
+case class SegIdWithIndexAndSegName(segmentId: String, par: String, index: Int, parentNo: String)
+
+case class IdAndKeyWordAndParentNo(id: String, keyWord: String, parentNo: String = "")
+
+abstract class Par(source: String) {
   val a = "[a-zA-Z]+&?[a-zA-Z]+".r
   val b = "([a-zA-Z]+\\W+)|(\\W+)|(\\W+[a-zA-Z]+)".r
 
@@ -12,23 +22,23 @@ sealed trait Par {
     s.exists(Character.UnicodeScript.of(_) == Character.UnicodeScript.HAN)
   }
 
-  def parse(desc: String): Int
+  def parse(desc: String): (String, Int)
 }
 
-case class SimplePar(s: String) extends Par {
-  def parseChinese(desc: String): Int = {
-    desc.indexOf(s.toUpperCase())
+case class SimplePar(s: String) extends Par(s) {
+  def parseChinese(desc: String): (String, Int) = {
+    (s, desc.indexOf(s.toUpperCase()))
   }
 
-  def parseEnglish(desc: String): Int = {
+  def parseEnglish(desc: String): (String, Int) = {
     val english = extractEnglish(desc)
     if (english.keys.toList.contains(s.toUpperCase())) {
-      desc.indexOf(english(s.toUpperCase))
+      (s, desc.indexOf(english(s.toUpperCase)))
     } else
-      -1
+      (s, -1)
   }
 
-  def parse(desc: String): Int = {
+  override def parse(desc: String): (String, Int) = {
     if (keyWordContainChinese(s))
       parseChinese(desc)
     else
@@ -36,20 +46,20 @@ case class SimplePar(s: String) extends Par {
   }
 }
 
-case class NotMatchSimplePar(s: String) extends Par {
-  def parseChinese(desc: String): Int = {
-    desc.indexOf(s.toUpperCase())
+case class NotMatchSimplePar(source: String, s: String) extends Par(source) {
+  def parseChinese(desc: String): (String, Int) = {
+    (source, desc.indexOf(s.toUpperCase()))
   }
 
-  def parseEnglish(desc: String): Int = {
+  def parseEnglish(desc: String): (String, Int) = {
     val english = extractEnglish(desc)
     if (english.keys.toList.contains(s.toUpperCase)) {
-      desc.indexOf(english(s.toUpperCase))
+      (source, desc.indexOf(english(s.toUpperCase)))
     } else
-      -1
+      (source, -1)
   }
 
-  def parse(desc: String): Int = {
+  override def parse(desc: String): (String, Int) = {
     if (keyWordContainChinese(s))
       parseChinese(desc)
     else
@@ -57,30 +67,30 @@ case class NotMatchSimplePar(s: String) extends Par {
   }
 }
 
-case class BothPar(s: (String, String)) extends Par {
-  def parseChinese(desc: String): Int =
-    Math.min(desc.indexOf(s._1.toUpperCase), desc.indexOf(s._2.toUpperCase))
+case class BothPar(source: String, s: (String, String)) extends Par(source) {
+  def parseChinese(desc: String): (String, Int) =
+    (source, Math.min(desc.indexOf(s._1.toUpperCase), desc.indexOf(s._2.toUpperCase)))
 
-  def parseEnglish(desc: String): Int = {
+  def parseEnglish(desc: String): (String, Int) = {
     val english = extractEnglish(desc)
     if (english.keys.toList.contains(s._1.toUpperCase) && english.keys.toList.contains(s._2.toUpperCase))
-      Math.min(desc.indexOf(english(s._1.toUpperCase)), desc.indexOf(extractEnglish(desc)(s._2.toUpperCase)))
+      (source, Math.min(desc.indexOf(english(s._1.toUpperCase)), desc.indexOf(extractEnglish(desc)(s._2.toUpperCase))))
     else
-      -1
+      (source, -1)
   }
 
-  def parse(desc: String): Int = {
+  override def parse(desc: String): (String, Int) = {
     lazy val english = extractEnglish(desc)
     (keyWordContainChinese(s._1), keyWordContainChinese(s._2)) match {
       case (true, true) => parseChinese(desc)
       case (false, false) => parseEnglish(desc)
-      case (true, false) => if (english.contains(s._1)) Math.min(desc.indexOf(s._1), desc.indexOf(extractEnglish(desc)(s._2.toUpperCase))) else -1
-      case (false, true) => if (english.contains(s._2)) Math.min(desc.indexOf(extractEnglish(desc)(s._1.toUpperCase)), desc.indexOf(s._2)) else -1
+      case (true, false) => if (english.contains(s._1)) (source, Math.min(desc.indexOf(s._1), desc.indexOf(extractEnglish(desc)(s._2.toUpperCase)))) else (source, -1)
+      case (false, true) => if (english.contains(s._2)) (source, Math.min(desc.indexOf(extractEnglish(desc)(s._1.toUpperCase)), desc.indexOf(s._2))) else (source, -1)
     }
   }
 }
 
-case class OneExpectPar(mustMatch: String, mustNotMatch: List[String]) extends Par {
+case class OneExpectPar(source: String, mustMatch: String, mustNotMatch: List[String]) extends Par(source) {
   def parseChinese(desc: String, keyWord: String): Int = {
     desc.indexOf(keyWord.toUpperCase)
   }
@@ -93,15 +103,15 @@ case class OneExpectPar(mustMatch: String, mustNotMatch: List[String]) extends P
       -1
   }
 
-  def parse(desc: String): Int = {
+  override def parse(desc: String): (String, Int) = {
     val index = indexOfMustMatch(desc)
     if (index == -1)
-      -1
+      (source, -1)
     else {
       if (containMustNotMatch(desc, mustNotMatch))
-        -1
+        (source, -1)
       else
-        index
+        (source, index)
     }
   }
 
@@ -134,32 +144,26 @@ object Par {
     def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
   }
 
-  def parser(t: String): List[Par] = {
-    t.split(";").map(i =>
-      i match {
-        case r"(.*)${first}/\{(.*)${second}\}" => OneExpectPar(first, second.split("\\$").toList)
-        case r"(.*)${first}/(.*)${second}" => BothPar((first, second))
-        case r"\{(.*)${first}\}" => NotMatchSimplePar(first)
-        case _ => SimplePar(i)
-      }).toList
-  }
-
-  def parse(idAndKeyWord: IdAndKeyWord)(desc: String): SegIdWithIndexAndSegName = {
-    val keyWordList = parser(idAndKeyWord.keyWord)
-    def go(list: List[Par], result: List[Int] = List()): List[Int] = {
+  def parse(idAndKeyWord: IdAndKeyWordAndParentNo)(desc: String): List[SegIdWithIndexAndSegName] = {
+    def go(list: List[Par], result: List[(String, Int)] = Nil): List[(String, Int)] = {
       list match {
         case Nil => result
         case h :: t => h match {
-          case _: NotMatchSimplePar => if (h.parse(desc) > -1) Nil else go(t, result)
-          case _ => if (h.parse(desc) > -1) go(t, h.parse(desc) :: result) else go(t, result)
+          case _: NotMatchSimplePar => if (h.parse(desc)._2 > -1) Nil else go(t, result)
+          case _ => if (h.parse(desc)._2 > -1) go(t, h.parse(desc) :: result) else go(t, result)
         }
       }
     }
-    val indexes = go(keyWordList)
-    SegIdWithIndexAndSegName(idAndKeyWord.id, idAndKeyWord.keyWord, indexes, idAndKeyWord.parentNo)
+
+    val list = idAndKeyWord.keyWord.split(";").map(i =>
+      i match {
+        case r"(.*)${first}/\{(.*)${second}\}" => OneExpectPar(i, first, second.split("\\$").toList)
+        case r"(.*)${first}/(.*)${second}" => BothPar(i, (first, second))
+        case r"\{(.*)${first}\}" => NotMatchSimplePar(i, first)
+        case _ => SimplePar(i)
+      }).toList
+
+    go(list).map(i => SegIdWithIndexAndSegName(idAndKeyWord.id, i._1, i._2, idAndKeyWord.parentNo))
   }
 }
 
-case class SegIdWithIndexAndSegName(segmentId: String, segmentName: String, index: List[Int], parentNo: String)
-
-case class IdAndKeyWord(id: String, keyWord: String, parentNo: String = "")

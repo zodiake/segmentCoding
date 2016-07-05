@@ -1,6 +1,6 @@
 package com.spark.coding
 
-import com.nielsen.model.{IdAndKeyWord, Par, SegIdWithIndexAndSegName}
+import com.nielsen.model.{IdAndKeyWordAndParentNo, Par, SegIdWithIndexAndSegName}
 import com.spark.model.Item
 import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
 
@@ -45,7 +45,7 @@ object SubBrandCoding {
 
     val subBrandConfigRDD = subBrandRDD.map(i => {
       val id = i(0)
-      (i(1), List(IdAndKeyWord(id, i(5)), IdAndKeyWord(id, i(6)), IdAndKeyWord(id, i(8))))
+      (i(1), List(IdAndKeyWordAndParentNo(id, i(5)), IdAndKeyWordAndParentNo(id, i(6)), IdAndKeyWordAndParentNo(id, i(8))))
     }).groupByKey
     val subBrand = subBrandConfigRDD.map(i => {
 
@@ -59,12 +59,10 @@ object SubBrandCoding {
         lazy val first = keywords.map(i => i.head).toList.filter(i => i.keyWord != "" && i.keyWord != "其他牌子")
         lazy val second = keywords.map(i => i.drop(1).head).toList.filter(i => i.keyWord != "")
         lazy val third = keywords.map(i => i.drop(2).head).toList.filter(i => i.keyWord != "" && i.keyWord != "O.Brand")
-        val p: Stream[List[IdAndKeyWord]] = Stream(first, second, third)
+        val p: Stream[List[IdAndKeyWordAndParentNo]] = Stream(first, second, third)
 
-        def extractSubBrand(list: Stream[List[IdAndKeyWord]], result: => List[SegIdWithIndexAndSegName] = List[SegIdWithIndexAndSegName]()): List[SegIdWithIndexAndSegName] = {
-          def go(list: List[IdAndKeyWord]): List[SegIdWithIndexAndSegName] = {
-            list.map(Par.parse(_)(brandDesc)).filter(i => i.index != Nil)
-          }
+        def extractSubBrand(list: Stream[List[IdAndKeyWordAndParentNo]], result: => List[SegIdWithIndexAndSegName] = List[SegIdWithIndexAndSegName]()): List[SegIdWithIndexAndSegName] = {
+          def go(list: List[IdAndKeyWordAndParentNo]): List[SegIdWithIndexAndSegName] = ???
 
           (list, result) match {
             case (Stream.Empty, _) => result
@@ -73,7 +71,7 @@ object SubBrandCoding {
           }
         }
 
-        val temp = extractSubBrand(p).map(i => IdDescIndexParent(i.segmentId, i.segmentName, i.index, parentIdBroadcast.value.getOrElse(i.segmentId, "-")))
+        val temp = extractSubBrand(p).map(i => IdDescIndexParent(i.segmentId, "", Nil, parentIdBroadcast.value.getOrElse(i.segmentId, "-")))
         val parentId = temp.map(i => i.parentId).toSet.filter { i => i == "-" }
         val filterParentList = for {
           i <- temp if (!parentId.contains(i.id))

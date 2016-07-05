@@ -12,8 +12,5 @@ class SubBrandSuite extends FunSuite {
     val desc = "SHAM/HAIR"
     val key = List(("1", "SHAM/HAIR/PWASH"), ("2", "SHAM/HAIR"), ("3", "SHAM/PWASH"), ("4", "HAIR/PWASH"), ("5", "OTHERS"))
     val c = new codingFunc()
-    val s = SegmentCoding.getBundleSegId(desc, key)
-    val index = c.getBundleSegId("SHAM/HAIR", key)
-    assert(s == index)
   }
 }

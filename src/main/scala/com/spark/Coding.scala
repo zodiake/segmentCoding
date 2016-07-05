@@ -1,6 +1,6 @@
 package com.spark
 
-import com.nielsen.model.IdAndKeyWord
+import com.nielsen.model.IdAndKeyWordAndParentNo
 
 object Coding {
   def main(args: Array[String]): Unit = {
@@ -9,7 +9,7 @@ object Coding {
 
     val c = segConfigBroadcast.groupBy(_ (1)).map {
       case (key, value) => {
-        val set = value.map(i => IdAndKeyWord(i(0), i(5), i.last))
+        val set = value.map(i => IdAndKeyWordAndParentNo(i(0), i(5), i.last))
         (key, set)
       }
     }

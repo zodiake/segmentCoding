@@ -1,5 +1,6 @@
 package com.spark.coding
 
+import com.nielsen.model.{IdAndKeyWordAndParentNo, Par}
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -15,7 +16,9 @@ object SegmentCodingTest {
     val segConfig = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SEGCONF.txt")).getLines().map(_.split(","))
       .filter(i => i(3) != "BRAND" && !i(3).contains("SUBBRAND") && i(3) != "PACKSIZE" && i(3) != "PRICETIER" && i(3) != "CATEGORY").toList
 
-    val kra = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/krasegment.txt")).getLines().map(_.split(",")).toList
+    val kra = sc.broadcast(scala.io.Source.fromInputStream(getClass.getResourceAsStream("/krasegment.txt")).getLines()
+      .map(_.split(",")).toList
+      .map(r => IdAndKeyWordAndParentNo(r(1), r(2)))).value
 
     val cateConfBroadCast = sc.broadcast(scala.io.Source.fromInputStream(getClass.getResourceAsStream("/CATCONF.txt")).getLines().map(_.split(",")).map {
       case Array(a, b) => (a, b)
@@ -39,12 +42,16 @@ object SegmentCodingTest {
 
     val keywordsList = sc.broadcast(segConfig.map(i => ((i(1), i(3)), i)).groupBy(_._1).map(s => (s._1, s._2.map(_._2)))).value
 
-    sourceRDD.map { s =>
-      val segmentList = categorySet(s.cateCode)
+    val result = sourceRDD.map { item =>
+      val segmentList = categorySet(item.cateCode)
       for {
-        se <- segmentList
+        segment <- segmentList
       } yield {
-        val keywords = keywordsList((s.cateCode, se))
+        if (item.cateCode == "SP" && segment == "LENGTH") {
+
+        } else if (item.cateCode == "BIS" && segment == "KRASEGMENT") {
+        }
+        val keywords = keywordsList((item.cateCode, segment))
       }
     }
   }
