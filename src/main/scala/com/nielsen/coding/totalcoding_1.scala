@@ -29,7 +29,7 @@ object totalcoding_1 {
     val raw_data_path = List("")
     //val catlist = List("BIS")
     val catlist = sc.textFile("D:/wangqi/testFile/SEGCONF").cache()
-    val config = List("FACIA")
+    val config = List("BIS")
 
     //val catlist = sc.textFile("D:/wangqi/testFile/SEGCONF").map(_.split(",")).collect().toList.map(_(1)).distinct
     //val des_data_path = List("aa_RESULT")
@@ -85,7 +85,7 @@ object totalcoding_1 {
           val subbrand_namelist = configFile.filter(_ (3).contains("SUBBRAND")).map(_ (3)).distinct
           val configFileNew = configFile.filter(x => x(3) != "CATEGORY")
           val brand_conf = itemmaster_brand(catcode, configFileNew) //List[List[(String, String)]] --eccbrandlist, eccshortdesc, eccmanulist, ecbrandlist, ecmanulist, parentidlist
-          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, "BRAND", KRAFile, cateCodeCombine, segNoCombine, brand_conf))
+          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, "SEGMENT", KRAFile, cateCodeCombine, segNoCombine, brand_conf))
 
           if (false) {
             var itemIdLst = List[String]() //change for remove muti packsize result 
