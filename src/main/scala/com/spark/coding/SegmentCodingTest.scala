@@ -46,10 +46,8 @@ object SegmentCodingTest {
       .map(i => ItemSegment(i(0), i(1), s"${i(2)} ${i(3)} ${i(4)}", s"${i(1)}".substring(0, 8), s"${i(1)}".substring(8, 13), i(8)))
 
     val categorySet = sc.broadcast(segConfig.map(i => (i(1), i(3))).groupBy(_._1).map(s => (s._1, s._2.map(_._2).toSet))).value
-
     val keywordsList = sc.broadcast(segConfig.map(i => ((i(1), i(3)), i)).groupBy(_._1).map(s => (s._1, s._2.map(_._2)))).value
-
-    val segCode = sc.broadcast(segConfig.map(i => (i(1), i(2))).toMap).value
+    val segCode = sc.broadcast(segConfig.map(i => (i(0), i(10))).toMap).value
 
     val result = sourceRDD.filter(_.cateCode == "BIS").map { item =>
       val segmentList = categorySet.getOrElse(item.cateCode, Set[String]()).toList
@@ -63,8 +61,8 @@ object SegmentCodingTest {
             val keyWordList = keywords.map(i => IdAndKeyWordAndParentNo(i(0), i(5)))
             val b = keyWordList.map(Par.parse(_)(item.brandDescription)).flatten
             b.sortBy(i => (i.index, i.par.length())) match {
-              case Nil => s"${item.id},segno,"
-              case h :: t => s"${item.id},segno,${h.segmentId},segcode,${item.perCode},${item.storeCode}"
+              case Nil => s"${item.id},segno,UNKNOWN,UNKNOWN,${item.perCode},${item.storeCode}"
+              case h :: t => s"${item.id},segno,${h.segmentId},${segCode(h.segmentId)},${item.perCode},${item.storeCode}"
             }
           }
 
