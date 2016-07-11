@@ -74,6 +74,8 @@ object PackSizeCode {
         }
       }
     }
+
+    //result.saveAsTextFile(args(1))
     result.take(20).foreach(println)
   }
 }
