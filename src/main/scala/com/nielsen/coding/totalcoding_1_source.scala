@@ -219,7 +219,8 @@ object totalcoding_1_source {
   def itemmaster_segment_forSecond(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
     val itemlist = itemfile.filter(_(1) == catcode).filter(x => x(3).toUpperCase() == segment).filter(x => x(4) != "不知道")
     val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
-      .filter(x => x._2 != "").map(x => (x._1, (x._2.split(";").toList.filter(_.contains("岁")) ::: x._2.split(";").toList.filter(_.contains("月"))).mkString(";"))).filter(_._2 != "")
+      .filter(x => x._2 != "").map(x => (x._1, (x._2.split(";")
+      .toList.filter(_.contains("岁")) ::: x._2.split(";").toList.filter(_.contains("月"))).mkString(";"))).filter(_._2 != "")
 
     val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
 
@@ -230,7 +231,8 @@ object totalcoding_1_source {
   def itemmaster_segment_forThird(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
     val itemlist = itemfile.filter(_(1) == catcode).filter(x => x(3).toUpperCase() == segment).filter(x => x(4) != "不知道")
     val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
-      .filter(x => x._2 != "").map(x => (x._1, x._2.split(";").toList.filter(!_.contains("岁")).filter(!_.contains("月")).mkString(";"))).filter(_._2 != "")
+      .filter(x => x._2 != "").map(x => (x._1, x._2.split(";")
+      .toList.filter(!_.contains("岁")).filter(!_.contains("月")).mkString(";"))).filter(_._2 != "")
     val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
     return List(desc, parentidlist)
   }

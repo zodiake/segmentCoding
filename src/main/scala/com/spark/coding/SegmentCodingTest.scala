@@ -1,6 +1,7 @@
 package com.spark.coding
 
 import com.nielsen.model.{IdAndKeyWordAndParentNo, Par}
+import com.nielsen.packsize.PacksizeCoding
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -8,7 +9,6 @@ import org.apache.spark.{SparkConf, SparkContext}
   */
 object SegmentCodingTest {
   def main(args: Array[String]): Unit = {
-
     System.setProperty("hadoop.home.dir", "C:\\winutil\\")
     val conf = new SparkConf().setMaster("local[2]").setAppName("My App")
     conf.setAppName("BrandCoding")
@@ -32,11 +32,11 @@ object SegmentCodingTest {
     def prepareCateCode(item: String): String = {
       val head = item.split(",")(0)
       val cateTrans = cateConfBroadCast.get(head.toUpperCase())
-      if (cateTrans.isDefined) {
+      if (cateTrans.isDefined)
         s"${item.replace(head, cateTrans.get)},${head}"
-      } else {
+      else
         s"${item}, "
-      }
+
     }
 
     val sourceRDD = sc.textFile("D:/wangqi/testFile/part-00000")
@@ -50,29 +50,95 @@ object SegmentCodingTest {
     val segCode = sc.broadcast(segConfig.map(i => (i(0), i(10))).toMap).value
 
     val result = sourceRDD.filter(_.cateCode == "BIS").map { item =>
+
+      def generalSegmentCoding(keywords: List[Array[String]]) = {
+        val keyWordList = keywords.map(i => IdAndKeyWordAndParentNo(i(0), i(5)))
+        implicit val alwaysTrue = (i: String) => true
+        val b = keyWordList.flatMap(Par.parse(_)(item.brandDescription))
+        b.sortBy(i => (i.index, i.par.length())) match {
+          case Nil => s"${item.id},segno,UNKNOWN,UNKNOWN,${item.perCode},${item.storeCode}"
+          case h :: t => s"${item.id},segno,${h.segmentId},${segCode(h.segmentId)},${item.perCode},${item.storeCode}"
+        }
+      }
+
       val segmentList = categorySet.getOrElse(item.cateCode, Set[String]()).toList
       item.cateCode match {
-        case "BIS" => {
+        case "FB" =>
+          val specificSegment = "CAPACITY"
+          val segList = segmentList.filter(_ != specificSegment)
+          val general = for {
+            segment <- segList
+          } yield {
+            val keywords = keywordsList((item.cateCode, segment))
+            generalSegmentCoding(keywords)
+          }
+          val size = PacksizeCoding.getPackSize(item.brandDescription, "ML")
+          val keywords = keywordsList((item.cateCode, specificSegment))
+          val stageString = size match {
+            case None => s"${item.id},segno,UNKNOWN,UNKNOWN,${item.perCode},${item.storeCode}"
+            case Some(e) =>
+              val t = keywords.filter(i => {
+                val low = i(5).split("-").head.toFloat
+                val high = i(5).split("-").reverse.head.toFloat
+                if (e >= low && e <= high)
+                  true
+                else
+                  false
+              })
+              if (t.size == 1)
+                s"${item.id},342,${item.id},10,${item.perCode},${item.storeCode}"
+              else
+                s"${item.id},segno,UNKNOWN,UNKNOWN,${item.perCode},${item.storeCode}"
+          }
+          stageString :: general
+        case "BIS" =>
           val segList = segmentList.filter(_ != "KRASEGMENT")
           val general = for {
             segment <- segList
           } yield {
             val keywords = keywordsList((item.cateCode, segment))
-            val keyWordList = keywords.map(i => IdAndKeyWordAndParentNo(i(0), i(5)))
-            val b = keyWordList.map(Par.parse(_)(item.brandDescription)).flatten
-            b.sortBy(i => (i.index, i.par.length())) match {
-              case Nil => s"${item.id},segno,UNKNOWN,UNKNOWN,${item.perCode},${item.storeCode}"
-              case h :: t => s"${item.id},segno,${h.segmentId},${segCode(h.segmentId)},${item.perCode},${item.storeCode}"
-            }
+            generalSegmentCoding(keywords)
           }
 
-          val list = kra.map(Par.parse(_)(item.brandDescription)).flatten.sortBy(_.segmentId)
+          implicit val alwaysTrue = (i: String) => true
+          val list = kra.flatMap(Par.parse(_)(item.brandDescription)).sortBy(_.segmentId)
           val kraSegment = list match {
             case Nil => s"${item.id},342,1460003,10,${item.perCode},${item.storeCode}"
             case h :: t => s"${item.id},342,${kraKey(h.segmentId)},10,${item.perCode},${item.storeCode}"
           }
           kraSegment :: general
-        }
+        case "SP" =>
+          val segList = segmentList.filter(_ != "LENGTH")
+          val general = for {
+            segment <- segList
+          } yield {
+            val keywords = keywordsList((item.cateCode, segment))
+            generalSegmentCoding(keywords)
+          }
+
+          val keywords = keywordsList((item.cateCode, "LENGTH"))
+        case "IMF" =>
+          val specificSegment = "STAGE"
+          val segList = segmentList.filter(_ != specificSegment)
+          val general = for {
+            segment <- segList
+          } yield {
+            val keywords = keywordsList((item.cateCode, segment))
+            generalSegmentCoding(keywords)
+          }
+
+          val keywords = keywordsList((item.cateCode, specificSegment)).filter(i => i(4) != "不知道")
+          val keyWordList = keywords.map(i => IdAndKeyWordAndParentNo(i(0), i(5), i.last))
+          implicit val alwaysTrue = (i: String) => true
+          val b = keyWordList.flatMap(Par.parse(_)(item.brandDescription))
+          val c = BrandCoding.filterParentId(item.brandDescription, b)
+          c.sortBy(i => (i.index, i.par.length())) match {
+            case Nil => {
+            }
+            case h :: t => {
+              s"${item.id},342,${h.segmentId},10,${item.perCode},${item.storeCode}"
+            }
+          }
       }
     }
     result.take(50).foreach(println)

@@ -41,28 +41,12 @@ object Logistic {
 
   def main(args: Array[String]): Unit = {
     System.setProperty("hadoop.home.dir", "C:/winutil/")
-    val conf = new SparkConf().setMaster("local").setAppName("Logistic")
+    val conf = new SparkConf().setMaster("local[4]").setAppName("Logistic")
     val sc = new SparkContext(conf)
 
-    val cateConfBroadCast = sc.broadcast(scala.io.Source.fromInputStream(getClass.getResourceAsStream("/CATCONF.txt")).getLines().map(_.split(",")).map {
-      case Array(a, b) => (a, b)
-    }.toMap).value
-
-    def prepareCateCode(item: String): String = {
-      val head = item.split(",")(0)
-      val cateTrans = cateConfBroadCast.get(head.toUpperCase())
-      if (cateTrans.isDefined) {
-        s"${item.replace(head, cateTrans.get)},${head}"
-      } else {
-        s"${item}, "
-      }
-    }
-
-    val sourceRDD = sc.textFile("D:/wangqi/testFile/part-00000")
-      .map(prepareCateCode)
+    val sourceRDD = sc.textFile("D:/wangqi/testFile/train.csv")
       .map(i => i.split(","))
-      .filter(i => i(0) != "")
-      .map(i => (i(0), i(4)))
+      .map(i => (i(0), i(3)))
       .mapPartitions(formated)
       .randomSplit(Array(0.6, 0.4), seed = 11L)
 
@@ -86,7 +70,7 @@ object Logistic {
     val trainData = trainVector.zip(trainLabel).map(i => LabeledPoint(CategoryUtils.categoryToInt(i._2), i._1.toDense))
 
     val model = new LogisticRegressionWithLBFGS()
-      .setNumClasses(95)
+      .setNumClasses(127)
       .run(trainData)
 
     val tf1 = hashingTF.transform(test)

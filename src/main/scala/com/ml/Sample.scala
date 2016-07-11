@@ -52,16 +52,15 @@ object Sample {
       }
     }
 
-    val sourcrRDD = sc.textFile("D:/wangqi/testFile/part-00000")
-      .map(prepareCateCode)
-      .filter(i => i.split(",")(0) != "")
-      .map(i => i.split(",")(4))
-      .mapPartitions(formated)
+    val sourceRDD = sc.textFile("D:/wangqi/testFile/train.csv")
+    val tokens = sourceRDD.map(i => i.split(",")(3)).mapPartitions(formated)
 
-    println("-------------------tokens---------------------------")
-    sourcrRDD.take(20).foreach(println)
-    val common = sourcrRDD.flatMap(i => i.map(j => (j, 1))).reduceByKey(_ + _)
+    val category=sourceRDD.map(_.split(",")(0)).collect().distinct
+
+    val common = tokens.flatMap(i => i.map(j => (j, 1))).reduceByKey(_ + _)
     println("-------------------most common----------------------")
     common.top(100)(Ordering.by[(String, Int), Int](_._2)).foreach(println)
+    println("-------------------category-------------------------")
+    category.foreach(println)
   }
 }

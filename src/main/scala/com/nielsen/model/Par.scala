@@ -144,7 +144,7 @@ object Par {
     def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
   }
 
-  def parse(idAndKeyWord: IdAndKeyWordAndParentNo)(desc: String): List[SegIdWithIndexAndSegName] = {
+  def parse(idAndKeyWord: IdAndKeyWordAndParentNo)(desc: String)(implicit f: String => Boolean): List[SegIdWithIndexAndSegName] = {
     def go(list: List[Par], result: List[(String, Int)] = Nil): List[(String, Int)] = {
       list match {
         case Nil => result
@@ -155,7 +155,7 @@ object Par {
       }
     }
 
-    val list = idAndKeyWord.keyWord.split(";").map(i =>
+    val list = idAndKeyWord.keyWord.split(";").filter(f).map(i =>
       i match {
         case r"(.*)${first}/\{(.*)${second}\}" => OneExpectPar(i, first, second.split("\\$").toList)
         case r"(.*)${first}/(.*)${second}" => BothPar(i, (first, second))
