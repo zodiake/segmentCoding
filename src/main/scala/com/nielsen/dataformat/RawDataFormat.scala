@@ -1,14 +1,10 @@
 package com.nielsen.dataformat
-import org.apache.spark.SparkConf
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
-import java.text.NumberFormat
-import sun.security.jca.GetInstance
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.fs.FileSystem
+
 import java.net.URI
+
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.shell.Delete
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.{SparkConf, SparkContext}
 
 object RawDataFormat {
 
@@ -39,7 +35,8 @@ object RawDataFormat {
       dataSrc = args(1) //TMTB
     }
 
-    val conf = new SparkConf()
+    System.setProperty("hadoop.home.dir", "C:\\winutil\\");
+    val conf = new SparkConf().setMaster("local").setAppName("My App")
     conf.setAppName("DataFormat")
     val sc = new SparkContext(conf)
     val templist = Array[String]()
@@ -52,13 +49,14 @@ object RawDataFormat {
       new etailerUniverse(
         colValue(1), //storeCode
         colValue(0) //storeWeb 
-        )
+      )
     })
     var storeCodeArr = uniCommRDD.map(x => (x.storeWeb, x.storeCode)).filter(_._1.equalsIgnoreCase(replaceE2C(dataSrc))).map(_._2).collect()
     var storeCode = ""
     if (!storeCodeArr.isEmpty) {
       storeCode = storeCodeArr.apply(0)
     }
+
     if (dataSrc == "TELECOM") {
       val teleRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 9)
       val rawRDD = teleRaw.map(row => {
@@ -73,7 +71,7 @@ object RawDataFormat {
           colValue(6).replace("\\", "").replace("N", "0"), //uv
           colValue(7), //website
           colValue(8) //location  
-          )
+        )
       })
 
       val uniRDD = universe.map(row => {
@@ -81,7 +79,7 @@ object RawDataFormat {
         new etailerUniverse(
           colValue(1), //storeCode
           colValue(2) //teleCode 
-          )
+        )
       })
 
       val rawRDD2 = rawRDD.map(x => (x.storeID, (year, x.prodDesc, x.cateLv2, x.cateLv1, x.storeID, x.pv, x.uv, x.website, x.location)))
@@ -92,7 +90,11 @@ object RawDataFormat {
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }
     if (dataSrc == "1MALL") {
-      val oneMallRaw = sc.textFile(pathRaw).filter(x => x.split(",").length == 15).filter(x => x.split(",")(14) == "商城")
+      val oneMallRaw = sc.textFile(pathRaw).filter(x => x.split(",").length == 15)
+        .filter(x => {
+          val col = x.split(",")(14)
+          col == "商城" || col == "商城海购"
+        })
       val rawRdd = oneMallRaw.map(raw => {
         val value = raw.split(",")
         new OneMallRaw(
@@ -110,10 +112,16 @@ object RawDataFormat {
           value(13), //实际买价
           value(14), //bizType
           value(0).replace("^\\xEF\\xBB\\xBF", "") //mm
-          )
+        )
       })
 
-      val result = rawRdd.map(x => "" + "," + "\"" + x.location + "\"" + "," + x.prodId + "," + storeCode + "," + "1mall" + "," + x.cateLvl2Nm + "," + x.cateLvl3Nm + "," + x.cateLvl4Nm + "," + x.cateLvLeaf + "," + "\"" + x.brand.replace(",", " ") + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.prodNm.replace(",", " ") + "\"" + "," + x.soldPrice + "," + 1 + "," + x.soldNum + "," + x.soldAmount + "," + x.soldActAmount + "," + x.date + "-01" + "," + "\"" + x.bizType.replace(",", " ") + "\"" + "," + "")
+      val result = rawRdd.map(x => {
+        if (x.bizType == "商城")
+          storeCode = "21008"
+        else if (x.bizType == "商城海购")
+          storeCode = "90278"
+        "" + "," + "\"" + x.location + "\"" + "," + x.prodId + "," + storeCode + "," + "1mall" + "," + x.cateLvl2Nm + "," + x.cateLvl3Nm + "," + x.cateLvl4Nm + "," + x.cateLvLeaf + "," + "\"" + x.brand.replace(",", " ") + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.prodNm.replace(",", " ") + "\"" + "," + x.soldPrice + "," + 1 + "," + x.soldNum + "," + x.soldAmount + "," + x.soldActAmount + "," + x.date + "-01" + "," + "\"" + x.bizType.replace(",", " ") + "\"" + "," + ""
+      })
       deleteExistPath(pathRaw)
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }
@@ -130,11 +138,18 @@ object RawDataFormat {
           value(3), //desc
           value(6).toDouble + value(8).toDouble, //salesvalue
           value(4).toDouble + value(7).toDouble, //salesvolume
-          value(5).toDouble + value(8).toDouble //payvalue
-          )
+          value(5).toDouble + value(8).toDouble,
+          value(5).toDouble //payvalue
+        )
       })
 
-      val result = rawRdd.map(x => x.storeId + "," + "\"" + x.city + "\"" + "," + x.itemCode + "," + storeCode + "," + "SUNING" + "," + x.prodCate.replace(",", "") + "," + x.EAN + "," + "" + "," + "" + "," + "\"" + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.desc.replace(",", "") + "\"" + "," + x.salesValue * 10000 + "," + 1 + "," + x.salesVolumn + "," + x.payValue * 10000 + "," + x.payValue * 10000 + "," + year.substring(0, 4) + "-" + year.substring(6) + "-" + "01" + "," + "\"" + " " + "\"" + "," + "")
+      val result = rawRdd.map(x => {
+        if (x.pay != 0.toDouble)
+          storeCode = "20270"
+        else
+          storeCode = "20271"
+        x.storeId + "," + "\"" + x.city + "\"" + "," + x.itemCode + "," + storeCode + "," + "SUNING" + "," + x.prodCate.replace(",", "") + "," + x.EAN + "," + "" + "," + "" + "," + "\"" + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.desc.replace(",", "") + "\"" + "," + x.salesValue * 10000 + "," + 1 + "," + x.salesVolumn + "," + x.payValue * 10000 + "," + x.payValue * 10000 + "," + year.substring(0, 4) + "-" + year.substring(6) + "-" + "01" + "," + "\"" + " " + "\"" + "," + ""
+      })
       deleteExistPath(pathRaw)
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }
@@ -157,7 +172,7 @@ object RawDataFormat {
         new etailerUniverse(
           colValue(1), //storeCode
           colValue(3) //teleCode 
-          )
+        )
       })
 
       val filterRaw = sc.textFile(pathFilter).collect().toList
@@ -187,7 +202,16 @@ object RawDataFormat {
           value(5),
           value(8))
       })
-      val result = rawRdd.map(x => x.province + "," + "\"" + x.city + "\"" + "," + x.productId + "," + storeCode + "," + "JD" + "," + x.cateLv2 + "," + x.cateLv3 + "," + "" + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.produtDesc + "\"" + "," + x.salesPrice + "," + 1 + "," + x.salesAmt + "," + x.totalAmt + "," + x.actBuyPrice + "," + x.date + "-01" + "," + "\"" + x.attribute + "\"" + "," + "")
+      /*
+        18,"1586",10090124297,20120,JD,休闲食品,糖果/巧克力,,,"福派园","",,"福派园 花生咸牛轧糖500g 手工牛扎糖 休闲零食品喜糖果软糖奶糖 花生味500g",16.2,1,1,16.2,16.2,2016-06-01,"京东平台",
+       */
+      val result = rawRdd.map(x => {
+        if (x.attribute == "京东平台")
+          storeCode = "20121"
+        else if (x.attribute == "京东自营")
+          storeCode = "20120"
+        x.province + "," + "\"" + x.city + "\"" + "," + x.productId + "," + storeCode + "," + "JD" + "," + x.cateLv2 + "," + x.cateLv3 + "," + "" + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.produtDesc + "\"" + "," + x.salesPrice + "," + 1 + "," + x.salesAmt + "," + x.totalAmt + "," + x.actBuyPrice + "," + x.date + "-01" + "," + "\"" + x.attribute + "\"" + "," + ""
+      })
       deleteExistPath(pathRaw)
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }
@@ -218,7 +242,8 @@ object RawDataFormat {
     }
     //.filter { x => x(9).length()>9 && x(9).head.isDigit }
     if (dataSrc == "TMTB") {
-      val tmtbRaw = sc.textFile(pathRaw).map { x => x.split(",") }.filter { x => x.length == 13 }.filter { x => x(8) != "0" && x(11) != "0" }.map { raw =>
+      val tmtbRaw = sc.textFile(pathRaw).map { x => x.split(",") }
+        .filter { x => x.length == 13 }.filter { x => x(8) != "0" && x(11) != "0" }.map { raw =>
         val shopId = raw(0)
         val prodId = raw(1)
         val catLv1 = raw(4)
@@ -270,7 +295,8 @@ object RawDataFormat {
       "飞牛网"
     } else eng
   }
-  // TBD 
+
+  // TBD
   def formatNum(num: Double, decimal: Int): String = {
     var result = ""
 

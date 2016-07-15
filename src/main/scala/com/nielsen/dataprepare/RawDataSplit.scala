@@ -1,20 +1,15 @@
 package com.nielsen.dataprepare
-import scala.io.Source
-import org.apache.spark.SparkConf
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
-import java.nio.charset.StandardCharsets
-import org.apache.spark.rdd._
-import org.apache.hadoop.fs.FileUtil
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.fs.FileSystem
+
 import java.net.URI
+
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.shell.Delete
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.{SparkConf, SparkContext}
+
 /**
- * @author Jason Wu
- *
- */
+  * @author Jason Wu
+  *
+  */
 object RawDataSplit {
 
   def main(args: Array[String]): Unit = {
@@ -25,15 +20,9 @@ object RawDataSplit {
 
     //添加批次的改动
     var batchNum = "12"
-    /*
     val source = args(0)
     val itemTarget = args(1)
     val salesTarget = args(2)
-    * 
-    */
-    val source = "C:/Users/wangqi08/Downloads/testFile/txt1.txt"
-    val itemTarget = "C:/Users/wangqi08/Downloads/testFile/items"
-    val salesTarget = "C:/Users/wangqi08/Downloads/testFile/sales"
 
     val itemfile = sc.textFile(source).map(_.split(",\"")).filter(_.size == 6)
       .filter(x => x(4).split("\",").size == 2)
@@ -63,12 +52,13 @@ object RawDataSplit {
         .groupBy(_._1)
         .sortByKey()
         .zipWithIndex
-      //RDD[((String, Array[(String, List[String])]), Int)]              
+      //RDD[((String, Array[(String, List[String])]), Int)]
       //.filter(x=>filterInvalidStr(x._2(18)))
       val item = fff.map(x => (x._1._1, x._1._2.map(_._2(18).toFloat).sum / x._1._2.size, x._2))
         .map(x => x._1 + "," + x._2.toString + "," + x._1.split(",").head +
           (if (x._1.split(",")(4).equalsIgnoreCase("B")) "10020"
           else if (x._1.split(",")(4).equalsIgnoreCase("C")) "10010"
+          else if (x._1.split(",")(4).equalsIgnoreCase("S")) "10022"
           else x._1.split(",")(4))
           + "%09.0f".format(x._3 * 1.0 + 1) + batchNum)
 
@@ -98,6 +88,7 @@ object RawDataSplit {
         .map(y => (List(y(14).trim(), y(15).trim(), y(16).trim(), y(17).trim(), y(18).trim(), (y(19) + " 00:00:00")).mkString(","), x._1._1.split(",").head +
           (if (x._1._1.split(",")(4).equalsIgnoreCase("B")) "10020"
           else if (x._1._1.split(",")(4).equalsIgnoreCase("C")) "10010"
+          else if (x._1._1.split(",")(4).equalsIgnoreCase("S")) "10022"
           else x._1._1.split(",")(4)) + "%09.0f".format(x._2 * 1.0 + 1) + batchNum)))
         .map(x => x.map(y => y._1 + "," + y._2 + "," + y._2.substring(0, 8) + "," + y._2.substring(8, 13)))
         .map(_.mkString("\n"))
@@ -116,10 +107,7 @@ object RawDataSplit {
       //deleteExistPath(salesTarget)
       //item.saveAsTextFile(itemTarget)
       //sales.saveAsTextFile(salesTarget)
-      val items = item.collect()
-      val sale = sales.collect()
-      println(item.count())
-      println(sales.count())
+      item.take(10).foreach(println)
     } catch {
       case t: Exception => t.printStackTrace()
     }

@@ -26,7 +26,7 @@ class codingFunc extends java.io.Serializable {
     //result.foreach(println)
     //val re1 = result.filter(x => x._3 != x._2._1 ||(x._3 == x._2._1 && result.count(y => y._3 == x._3)==1))
     //历史原因，原先代码不是通过segmentid 判断是否重复而是通过desc来判断是否重复，
-    //todo val re1 = result.filter(x => !n.exists(y => y == x._2._1)) 
+    //todo val re1 = result.filter(x => !n.exists(y => y == x._2._1))
     val re1 = result.filter(x => !n.exists(y => y == x._2._2)) //去掉存在parentid的
     //出现一个词包含另一个词的情况时,取长的词
     var result_f = re1.filter(x => re1.filter(y =>
@@ -395,3 +395,4 @@ class codingFunc extends java.io.Serializable {
   }
 
 }
+

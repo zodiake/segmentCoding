@@ -131,7 +131,7 @@ object SegmentCodingTest {
           val keyWordList = keywords.map(i => IdAndKeyWordAndParentNo(i(0), i(5), i.last))
           implicit val alwaysTrue = (i: String) => true
           val b = keyWordList.flatMap(Par.parse(_)(item.brandDescription))
-          val c = BrandCoding.filterParentId(item.brandDescription, b)
+          val c = SegmentUtils.filterParentId(item.brandDescription, b)
           c.sortBy(i => (i.index, i.par.length())) match {
             case Nil => {
             }

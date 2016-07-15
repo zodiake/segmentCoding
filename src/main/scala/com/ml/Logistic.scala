@@ -21,11 +21,11 @@ object Logistic {
 
   def formated(i: Iterator[(String, String)]) = {
     import collection.JavaConverters._
-    val c = ArrayBuffer("包邮", "正品", "进口", "批发", "现货", "皇冠", "特价", "新品").asJava
+    val c = ArrayBuffer("袋", "瓶", "盒", "包", "克", "片", "罐", "支").asJava
     val analyzer = new CJKWithoutNumberAnalyzer(new CharArraySet(c, true))
     for (s <- i)
       yield {
-        val tokenStream = analyzer.tokenStream(null, new StringReader(s._1))
+        val tokenStream = analyzer.tokenStream(null, new StringReader(s._2))
         val charTermAttribute = tokenStream.addAttribute(classOf[CharTermAttribute])
         tokenStream.reset()
         val list = new scala.collection.mutable.ListBuffer[String]()
@@ -44,11 +44,12 @@ object Logistic {
     val conf = new SparkConf().setMaster("local[4]").setAppName("Logistic")
     val sc = new SparkContext(conf)
 
-    val sourceRDD = sc.textFile("D:/wangqi/testFile/train.csv")
+    val sourceRDD = sc.textFile("D:/wangqi/svm/test.csv")
       .map(i => i.split(","))
-      .map(i => (i(0), i(3)))
+      .map(i => (i(1), i(0)))
+      .map(i => if (i._1 == "non-audit") ("422", i._2) else i)
       .mapPartitions(formated)
-      .randomSplit(Array(0.6, 0.4), seed = 11L)
+      .randomSplit(Array(0.7, 0.3), seed = 11L)
 
     val trainRDD = sourceRDD(0)
     val testRDD = sourceRDD(1)
@@ -61,7 +62,7 @@ object Logistic {
     val dim = math.pow(2, 10).toInt
     val hashingTF = new HashingTF(dim)
     val tf = hashingTF.transform(train)
-    val idf = new IDF(minDocFreq = 2).fit(tf)
+    val idf = new IDF().fit(tf)
     val tfidf = idf.transform(tf)
     val trainVector = tfidf.map(v => {
       v.asInstanceOf[SV]
@@ -70,7 +71,7 @@ object Logistic {
     val trainData = trainVector.zip(trainLabel).map(i => LabeledPoint(CategoryUtils.categoryToInt(i._2), i._1.toDense))
 
     val model = new LogisticRegressionWithLBFGS()
-      .setNumClasses(127)
+      .setNumClasses(162)
       .run(trainData)
 
     val tf1 = hashingTF.transform(test)
