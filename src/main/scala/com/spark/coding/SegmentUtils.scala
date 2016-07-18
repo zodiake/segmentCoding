@@ -2,8 +2,6 @@ package com.spark.coding
 
 import com.nielsen.model.SegIdWithIndexAndSegName
 
-import scala.collection.mutable.ListBuffer
-
 /**
   * Created by wangqi08 on 11/7/2016.
   */
@@ -31,21 +29,11 @@ object SegmentUtils {
   def filterParentId(brandDesc: String, list: List[SegIdWithIndexAndSegName]): List[SegIdWithIndexAndSegName] = {
     val parentId = list.map(i => i.parentNo).toSet.filter { i => i == "-" }
 
-    val filterParentList = for {
-      i <- list if !parentId.contains(i.segmentId)
-    } yield i
-
-    val b = filterParentList.to[ListBuffer]
-
-    for (i <- b) {
-      for (j <- b) {
-        if (j.par.indexOf(i.par) > -1 && j.par.length > i.par.length) {
-          b -= i
-        } else
-          b
-      }
-    }
-    b.toList
+    for {
+      j <- list if !parentId.contains(j.segmentId)
+      k <- list.filter(_ != j) if (k.par.indexOf(j.par) > -1 && k.par.length > j.par.length)
+    } yield
+      k
   }
 
   def replaceC2E(s: String): String = {

@@ -1,5 +1,11 @@
 object sheet1 {
-  val b = List(Array('a', 'b'), Array('a', 'c'), Array('b', 'c'))
+  val list = List("1", "2", "23", "13")
 
-  val c=b.groupBy(_ (0))
+  trait FilterSub
+
+  for {
+    j <- list
+    k <- list.filter(_ != j) if (k.indexOf(j) > -1 && k.length > j.length)
+  } yield
+    k
 }

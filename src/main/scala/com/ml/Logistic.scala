@@ -83,8 +83,6 @@ object Logistic {
       (prediction, label)
     }
 
-    val metrics = new MulticlassMetrics(predictionAndLabels)
-    val precision = metrics.precision
-    println("Precision = " + precision)
+    predictionAndLabels.take(10).foreach(println)
   }
 }

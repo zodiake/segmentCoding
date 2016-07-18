@@ -9,44 +9,51 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.util.control.Breaks._
 
-
 object totalcoding_1 {
-
+  /*
+             --args(0): catogory code(多个用逗号分割，全部用ALL)
+             --args(1): segment config file path
+             --args(2): input file path
+             --args(3): category config file path
+             --args(4): output file path
+             --args(5): coding 的类型（BRAND,SUBBRAND,PACKSIZE,SEGMENT）全部用ALL
+             --args(6): KRASegment config file path
+             *
+             */
   def main(args: Array[String]) {
-    if (args.length < 2) {
-      System.err.println("Usage: <inputFile> <outputFile> <brand_list>")
-      System.exit(1)
-    }
-
-    val conf = new SparkConf()
-    conf.setAppName("TotalCoding")
+    System.setProperty("hadoop.home.dir", "C:\\winutil\\");
+    val conf = new SparkConf().setMaster("local").setAppName("My App")
+    conf.setAppName("TotalCoding_old")
     val sc = new SparkContext(conf)
-    var catlist = List[String]()
-    if (args(0) == "ALL") {
-      catlist = sc.textFile(args(1)).map(_.split(",")).collect().toList.map(_ (1)).distinct
-    } else {
-      catlist = args(0).split(",").toList
-    }
     //val catlist = args(0).split(",")
     val raw_data_path = List("")
+    //val catlist = List("BIS")
+    val catlist = sc.textFile("D:/wangqi/testFile/SEGCONF").cache()
+    val config = List("GUM")
+
+    //val catlist = sc.textFile("D:/wangqi/testFile/SEGCONF").map(_.split(",")).collect().toList.map(_(1)).distinct
     //val des_data_path = List("aa_RESULT")
     for (path <- raw_data_path) {
       //-----------??????????????
 
       val templist = Array[String]()
 
-      val months = sc.textFile(args(2) + path).map(_.split(",")).filter(_.size > 2).map(item => item(1).substring(0, 4) + item(1).substring(6, 8)).distinct.collect().toList
+      val source = sc.textFile("D:/wangqi/testFile/sp1.txt")
+      //val months = source.map(_.split(",")).filter(_.size > 2).map(item => (1, item(1).substring(0, 4) + item(1).substring(6, 8))).aggregateByKey(initialSet)((k, v) => k + v, (s1, s2) => s1 ++= s2).values
+      val months = source.map(_.split(",")).filter(_.size > 2).map(item => item(1).substring(0, 4) + item(1).substring(6, 8)).distinct.collect().toList
+      val cateConf = sc.textFile("D:/wangqi/testFile/CATCONF").map(_.split(",")).map { case Array(a, b) => (a, b) }.collectAsMap
+      val cateConf1BroadCast = sc.broadcast(cateConf)
       var i = 1
       //add for bis
       var KRAFile = List[Array[String]]()
       //add end
       var cateCodeCombine = ""
       var segNoCombine = ""
-      for (month <- months) {
+      for {month <- months} {
         var ree = sc.parallelize(templist)
-        for (catcode <- catlist) {
+        for (catcode <- config) {
           if (catcode == "BIS") {
-            KRAFile = sc.textFile(args(6)).map(_.split(",")).collect().toList
+            KRAFile = sc.textFile("D:/wangqi/testFile/krasegment").map(_.split(",")).collect().toList
           }
           //new requirement for combine two segment to one segment for the specific catecode
           if (catcode == "SKIN") {
@@ -57,16 +64,30 @@ object totalcoding_1 {
             cateCodeCombine = "FACIA"
             segNoCombine = "ANTIAPORE,MOISLIGHT,OILACNEP"
           }
-          val configFile = sc.textFile(args(1)).map(_.split(",")).collect().toList.filter(_ (1) == catcode)
-          val cateConf = sc.textFile(args(3)).map(_.split(",")).collect().toList //add for match bundedpack
-          val testFile = sc.textFile(args(2) + path, 336).map(x => transCateCode(x, cateConf).split(",")).filter(_ (0).toUpperCase() == catcode)
-              .filter(item => (item(1).substring(0, 4) + item(1).substring(6, 8)) == month)
+          val configFile = catlist.map(_.split(",")).collect().toList.filter(_ (1) == catcode)
+
+          def transCateCode1(item: String): String = {
+            val head = item.split(",")(0)
+            val cateTrans = cateConf1BroadCast.value.get(head.toUpperCase())
+            if (cateTrans.isDefined) {
+              item.replace(head, cateTrans.get) + "," + head
+            } else {
+              item + "," + " "
+            }
+          }
+
+          val testFile = source
+            .map(x => transCateCode1(x).split(","))
+            .filter(_ (0).toUpperCase() == catcode)
+            .filter(item => (item(1).substring(0, 4) + item(1).substring(6, 8)) == month)
           val seglist = configFile.filter(x => x(3) != "BRAND" && !x(3).contains("SUBBRAND") && x(3) != "PACKSIZE" && x(3) != "PRICETIER" && x(3) != "CATEGORY")
             .map(_ (3)).distinct
           val subbrand_namelist = configFile.filter(_ (3).contains("SUBBRAND")).map(_ (3)).distinct
-          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, args(5), KRAFile, cateCodeCombine, segNoCombine))
+          val configFileNew = configFile.filter(x => x(3) != "CATEGORY")
+          val brand_conf = itemmaster_brand(catcode, configFileNew) //List[List[(String, String)]] --eccbrandlist, eccshortdesc, eccmanulist, ecbrandlist, ecmanulist, parentidlist
+          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, "BRAND", KRAFile, cateCodeCombine, segNoCombine, brand_conf))
 
-          if (args(5).contains("PACKSIZE") || args(5) == "ALL") {
+          if (false) {
             var itemIdLst = List[String]() //change for remove muti packsize result
             if (catcode == "IMF") {
               val item_withnopack = tempre.map(_._1).filter(_.packsize == "").collect().toList
@@ -102,8 +123,7 @@ object totalcoding_1 {
             ree = tempre.map(_._2.mkString("\n")) ++ ree
           }
         }
-        deleteExistPath(args(4) + "_" + i + ".SEG")
-        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
+        ree.filter(_ != "").take(20).foreach(println)
         i = i + 1
       }
 
@@ -142,12 +162,10 @@ object totalcoding_1 {
           flag = false
           break
         }
-      }
-    )
+      })
 
     return flag
   }
-
 
   def deleteExistPath(pathRaw: String) {
     val outPut = new Path(pathRaw)
@@ -270,9 +288,7 @@ object totalcoding_1 {
     val segmentresult = testFile.map(x => (
       codingFuct.MKWLC(
         x(4) + x(5).toUpperCase(),
-        itemmaster_segment(x(0), segname, configFile)
-      ), x(1)
-      ))
+        itemmaster_segment(x(0), segname, configFile)), x(1)))
       .map(x => if (x._1 == "") {
         (otherdesc, x._2)
       } else (x._1, x._2))
@@ -281,9 +297,7 @@ object totalcoding_1 {
     return segmentresult
   }
 
-
-  def coding(item_raw: Array[String], configFile: List[Array[String]], seglist: List[String], subbrand_namelist: List[String], codingType: String, krafile: List[Array[String]], cateCodeCombine: String, segCombine: String): (item, List[String]) = {
-
+  def coding(item_raw: Array[String], configFile: List[Array[String]], seglist: List[String], subbrand_namelist: List[String], codingType: String, krafile: List[Array[String]], cateCodeCombine: String, segCombine: String, brand_conf: List[List[(String, String)]]): (item, List[String]) = {
     var brandFlg = false
     var packsizeFlg = false
     var pricetierFlg = false
@@ -344,7 +358,6 @@ object totalcoding_1 {
 
     val configFileNew = configFile.filter(x => x(3) != "CATEGORY")
     //brand coding
-    val brand_conf = itemmaster_brand(catCode, configFileNew) //List[List[(String, String)]] --eccbrandlist, eccshortdesc, eccmanulist, ecbrandlist, ecmanulist, parentidlist
     if (brandFlg) {
       val brand_id = codingFunc.MKWLC(item.brand_description, brand_conf)
       item.brand_id = brand_id
@@ -362,7 +375,6 @@ object totalcoding_1 {
     }
 
     //packsize coding
-
     val packsize_conf = itemmaster_packsize(catCode, configFileNew)
     if (packsizeFlg) {
       val packsize = packsize_conf.map(y =>
@@ -398,18 +410,18 @@ object totalcoding_1 {
 
     //pricetier coding
     /* if(pricetierFlg){
-       val pricetier_conf = configFileNew.filter(_(3) == "PRICETIER")
-       val price_result = pricetier_conf.filter(x => codingFunc.checkprice(item.price, x(5)))
-       if(price_result.isEmpty || price_result.size > 1 || catCode == "DIAP"){
+      val pricetier_conf = configFileNew.filter(_(3) == "PRICETIER")
+      val price_result = pricetier_conf.filter(x => codingFunc.checkprice(item.price, x(5)))
+      if(price_result.isEmpty || price_result.size > 1 || catCode == "DIAP"){
 
-       }else {
-         val pricetierno = price_result.head(2)
-         item.pricetier = price_result.head(0)
-         val segcode = configFileNew.filter(_(0) == item.pricetier).map(_(10)).head
-         item_result = (item.ITEMID + "," + pricetierno + "," + item.pricetier + "," + segcode + "," + item.perCode + "," + item.storeCode) :: item_result
-       }
-     }
-     */
+      }else {
+        val pricetierno = price_result.head(2)
+        item.pricetier = price_result.head(0)
+        val segcode = configFileNew.filter(_(0) == item.pricetier).map(_(10)).head
+        item_result = (item.ITEMID + "," + pricetierno + "," + item.pricetier + "," + segcode + "," + item.perCode + "," + item.storeCode) :: item_result
+      }
+    }
+    */
     //subbrand coding
     if (subbrandFlg) {
       for (subbrand_name <- subbrand_namelist) {
@@ -490,11 +502,12 @@ object totalcoding_1 {
                 seg_id = "650003"
               }
             }
-          }
-          //add this part for V2.1 requirement change
+          } //add this part for V2.1 requirement change
           else if (catCode == "SP" && seg == "LENGTH") {
             val seg_conf = itemmaster_segment("SP", "LENGTH", configFileNew)
-            val length_conf = seg_conf.head.filter(_._2.contains("MM")).map(x => (x._1, codingUtil.spLengthCoding(x._2, "MM", List()))).map(x => (x._1, codingUtil.parseListToTuple(x._2)))
+            val length_conf = seg_conf.head.filter(_._2.contains("MM"))
+              .map(x => (x._1, codingUtil.spLengthCoding(x._2, "MM", List())))
+              .map(x => (x._1, codingUtil.parseListToTuple(x._2)))
             val unitList = List("mm", "cm")
             val itemLengthforMM = unitList.map { x => codingUtil.parseCMToMM(x, codingUtil.spLengthCoding(item.description, x, List())).distinct }.map(x => x.filter { x => x > 50 }).filter { x => !x.isEmpty }.distinct
             seg_id = codingUtil.getFinalSegId(itemLengthforMM, length_conf, "5160005")
@@ -560,7 +573,6 @@ object totalcoding_1 {
     return (item, item_result)
   }
 
-
   def item2String(item: item): String = {
     return item.ITEMID + "," + "1526" + "," + item.packsize_new
   }
@@ -590,7 +602,6 @@ object totalcoding_1 {
     }
     return check
   }
-
 
   //add for match bundedpack
   def transCateCode(item: String, cateConf: List[Array[String]]): String = {
