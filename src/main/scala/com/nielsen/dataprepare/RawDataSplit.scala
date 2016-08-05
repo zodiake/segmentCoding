@@ -14,12 +14,11 @@ object RawDataSplit {
 
   def main(args: Array[String]): Unit = {
 
-    System.setProperty("hadoop.home.dir", "C:\\winutil\\");
-    val conf = new SparkConf().setMaster("local").setAppName("RawDataSplit")
+    val conf = new SparkConf()
     val sc = new SparkContext(conf)
 
     //添加批次的改动
-    var batchNum = "12"
+    var batchNum = args(3)
     val source = args(0)
     val itemTarget = args(1)
     val salesTarget = args(2)
@@ -59,6 +58,8 @@ object RawDataSplit {
           (if (x._1.split(",")(4).equalsIgnoreCase("B")) "10020"
           else if (x._1.split(",")(4).equalsIgnoreCase("C")) "10010"
           else if (x._1.split(",")(4).equalsIgnoreCase("S")) "10022"
+          else if (x._1.split(",")(4).equalsIgnoreCase("G")) "10011"
+          else if (x._1.split(",")(4).equalsIgnoreCase("H")) "10021"
           else x._1.split(",")(4))
           + "%09.0f".format(x._3 * 1.0 + 1) + batchNum)
 
@@ -89,6 +90,8 @@ object RawDataSplit {
           (if (x._1._1.split(",")(4).equalsIgnoreCase("B")) "10020"
           else if (x._1._1.split(",")(4).equalsIgnoreCase("C")) "10010"
           else if (x._1._1.split(",")(4).equalsIgnoreCase("S")) "10022"
+          else if (x._1._1.split(",")(4).equalsIgnoreCase("G")) "10011"
+          else if (x._1._1.split(",")(4).equalsIgnoreCase("H")) "10021"
           else x._1._1.split(",")(4)) + "%09.0f".format(x._2 * 1.0 + 1) + batchNum)))
         .map(x => x.map(y => y._1 + "," + y._2 + "," + y._2.substring(0, 8) + "," + y._2.substring(8, 13)))
         .map(_.mkString("\n"))
@@ -103,11 +106,10 @@ object RawDataSplit {
                                   + "%09.0f".format(x._2 * 1.0 + 1),y(19))))
                       .map(x => x.map(y => y._2+","+ y._3 + "," + y._1 + "," + y._2.substring(0, 8) +","+""+","+""+","+""))
                       .map(_.mkString("\n")) */
-      //deleteExistPath(itemTarget)
-      //deleteExistPath(salesTarget)
-      //item.saveAsTextFile(itemTarget)
-      //sales.saveAsTextFile(salesTarget)
-      item.take(10).foreach(println)
+      deleteExistPath(itemTarget)
+      deleteExistPath(salesTarget)
+      item.saveAsTextFile(itemTarget)
+      sales.saveAsTextFile(salesTarget)
     } catch {
       case t: Exception => t.printStackTrace()
     }

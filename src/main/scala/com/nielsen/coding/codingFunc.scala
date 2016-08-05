@@ -23,7 +23,7 @@ class codingFunc extends java.io.Serializable {
     val p = result.map(_._3).filter(_ != "-").distinct //取出distinct的parentid  ---?????
     //todo val n = result.filter(x => p.exists(y => y == x._2._1)).map(_._2._1) //获取segmentid==fno的条目
     val n = result.filter(x => p.exists(y => y == x._2._1)).map(_._2._2) //获取segmentid==fno的条目
-    //result.foreach(println)
+    //result.foreach(println)(1,2,3,4,5,6)(2,3,6)()
     //val re1 = result.filter(x => x._3 != x._2._1 ||(x._3 == x._2._1 && result.count(y => y._3 == x._3)==1))
     //历史原因，原先代码不是通过segmentid 判断是否重复而是通过desc来判断是否重复，
     //todo val re1 = result.filter(x => !n.exists(y => y == x._2._1))

@@ -1,11 +1,7 @@
+
+
 object sheet1 {
-  val list = List("1", "2", "23", "13")
-
-  trait FilterSub
-
-  for {
-    j <- list
-    k <- list.filter(_ != j) if (k.indexOf(j) > -1 && k.length > j.length)
-  } yield
-    k
+  val c = List(1, 0, 0, 1)
+  val a = List(1, 0, 1, 0)
+  c | a
 }

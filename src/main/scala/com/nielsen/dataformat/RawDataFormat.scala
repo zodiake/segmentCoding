@@ -35,8 +35,7 @@ object RawDataFormat {
       dataSrc = args(1) //TMTB
     }
 
-    System.setProperty("hadoop.home.dir", "C:\\winutil\\");
-    val conf = new SparkConf().setMaster("local").setAppName("My App")
+    val conf = new SparkConf()
     conf.setAppName("DataFormat")
     val sc = new SparkContext(conf)
     val templist = Array[String]()
@@ -55,6 +54,39 @@ object RawDataFormat {
     var storeCode = ""
     if (!storeCodeArr.isEmpty) {
       storeCode = storeCodeArr.apply(0)
+    }
+
+    if (dataSrc == "TELECOMCROSS") {
+      val teleRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 9)
+      val rawRDD = teleRaw.map(row => {
+        val colValue = row.split("\t")
+        new TelecomRaw(
+          colValue(0).replace("^\\xEF\\xBB\\xBF", ""), //date
+          colValue(1), //prodDesc
+          colValue(2), //cateLv2
+          colValue(3), //cateLv1
+          colValue(4), //storeID  to match teleCode
+          colValue(5).replace("\\", "").replace("N", "0"), //pv
+          colValue(6).replace("\\", "").replace("N", "0"), //uv
+          colValue(7), //website
+          colValue(8) //location
+        )
+      })
+
+      val uniRDD = universe.map(row => {
+        val colValue = row.split(",")
+        new etailerUniverse(
+          colValue(1), //storeCode
+          colValue(2) //teleCode
+        )
+      })
+
+      val rawRDD2 = rawRDD.map(x => (x.storeID, (year, x.prodDesc, x.cateLv2, x.cateLv1, x.storeID, x.pv, x.uv, x.website, x.location)))
+      val uniRDD2 = uniRDD.map(x => (x.storeWeb, x.storeCode))
+      val teleReformatRaw = rawRDD2.leftOuterJoin(uniRDD2).filter(!_._2._2.isEmpty)
+      val result = teleReformatRaw.map(x => "" + "," + "\"" + x._2._1._9 + "\"" + "," + "" + "," + x._2._2.get + "," + "TELECOMCROSS" + "," + x._2._1._3.replace(",", "") + "," + x._2._1._4 + "," + "" + "," + "" + "," + "\"" + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x._2._1._2.replace(",", "") + "\"" + "," + x._2._1._6 + "," + "1" + "," + x._2._1._7 + "," + x._2._1._6 + "," + x._2._1._6 + "," + year.substring(0, 4) + "-" + year.substring(6) + "-" + "01" + "," + "\"" + x._2._1._8 + "\"" + "," + "")
+      deleteExistPath(pathRaw)
+      result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }
 
     if (dataSrc == "TELECOM") {
@@ -236,7 +268,13 @@ object RawDataFormat {
           formatDate(value(0)),
           value(11))
       })
-      val result = rawRdd.map(x => "" + "," + "\"" + x.city + "\"" + "," + x.prodId + "," + storeCode + "," + "FEINIU" + "," + x.cateLv2 + "," + x.cateLv3 + "," + x.cateLv4 + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "" + "\"" + "," + "" + "," + "\"" + x.prodDesc + "\"" + "," + x.salesPrice + "," + "1" + "," + x.salesAmount + "," + x.totalAmt.trim() + "," + x.actBuyPrice + "," + x.date + "," + "\"" + x.source + "\"" + "," + x.attribute.trim())
+      val result = rawRdd.map(x => {
+        if (x.source == "自营")
+          storeCode = "20510"
+        else if (x.source == "商城")
+          storeCode = "20511"
+        "" + "," + "\"" + x.city + "\"" + "," + x.prodId + "," + storeCode + "," + "FEINIU" + "," + x.cateLv2 + "," + x.cateLv3 + "," + x.cateLv4 + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "" + "\"" + "," + "" + "," + "\"" + x.prodDesc + "\"" + "," + x.salesPrice + "," + "1" + "," + x.salesAmount + "," + x.totalAmt.trim() + "," + x.actBuyPrice + "," + x.date + "," + "\"" + x.source + "\"" + "," + x.attribute.trim()
+      })
       deleteExistPath(pathRaw)
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }

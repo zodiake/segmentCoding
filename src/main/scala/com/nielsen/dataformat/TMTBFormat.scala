@@ -8,8 +8,7 @@ import org.apache.spark.{SparkConf, SparkContext}
  */
 object TMTBFormat {
   def main(args: Array[String]): Unit = {
-    System.setProperty("hadoop.home.dir", "C:\\winutil\\");
-    val conf = new SparkConf().setMaster("local").setAppName("My App")
+    val conf = new SparkConf()
     conf.setAppName("TMTBFormat")
     // conf.setMaster("local")
 

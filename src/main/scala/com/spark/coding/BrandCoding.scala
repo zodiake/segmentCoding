@@ -20,7 +20,6 @@ object BrandCoding {
     conf.set("spark.scheduler.mode", "FAIR")
     conf.registerKryoClasses(Array(classOf[IdAndKeyWordAndParentNo], classOf[SegIdWithIndexAndSegName]))
     val sc = new SparkContext(conf)
-    val segConfig = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SEGCONF.txt")).getLines().map(_.split(",")).toList
     val (brandConfig, categoryConfig) = SegmentUtils.getConfig("BRAND")
     val separator = sys.props("line.separator")
 
