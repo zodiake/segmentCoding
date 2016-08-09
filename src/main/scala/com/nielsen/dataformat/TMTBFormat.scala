@@ -29,23 +29,20 @@ object TMTBFormat {
 
     val filter = desc.filter { x => x.split(",", -1).length < 20 }
     val util = new codingUtil
-    /*
+
     util.deleteExistPath(args(0) + ".FORMAT")
     util.deleteExistPath(args(0) + ".FILTER")
-    */
 
     val res = descFormat.map(row => {
       val array = row.split(",")
       if (array(3) == "B" || array(3) == "C")
-        if (array(12).indexOf("天猫超市") == 2)
+        if (array(10).indexOf("天猫超市") == 2)
           array(3) = "S"
       array.mkString(",")
     })
 
-    res.take(1).foreach(println)
-
-    //descFormat.saveAsTextFile(args(0) + ".FORMAT")
-    //filter.saveAsTextFile(args(0) + ".FILTER")
+    descFormat.saveAsTextFile(args(0) + ".FORMAT")
+    filter.saveAsTextFile(args(0) + ".FILTER")
 
     //println(descFormat)
 

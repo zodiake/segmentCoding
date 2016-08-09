@@ -108,7 +108,7 @@ class codingFunc extends java.io.Serializable {
         } else {
           //itemdesc_e.indexOf(x)   //英文则按全字匹配
           try {
-            itemdesc_e_1(x)
+            itemdesc_e_1(targetdesc)
           } catch {
             case t: Exception => -1 // TODO: handle error
           }
