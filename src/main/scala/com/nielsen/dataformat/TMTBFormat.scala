@@ -20,7 +20,7 @@ object TMTBFormat {
     val desc = sc.textFile(args(0))
     val config = sc.textFile(args(1))
 
-    val configMap = config.map(_.split(" ")).map { x => x(0) -> x(1) }.collect().toMap
+    val configMap = config.map(_.split(" ")).map(x => (x(0), x(1))).collect().toMap
 
     val descFormat = desc.map { x => (x, x.split(",", -1)) }.filter(_._2.length >= 20)
       .map { x => (x._1, x._2(4) + "," + x._2(5) + "," + x._2(6), x._1.indexOf(x._2(4) + "," + x._2(5) + "," + x._2(6))) }

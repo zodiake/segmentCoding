@@ -1,7 +1,7 @@
 package com.ml
 
+import com.ml.tokenizer.TokenizerUtil
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
-import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.DecisionTree
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -15,24 +15,21 @@ object DicisionTree {
     val conf = new SparkConf().setMaster("local[*]").setAppName("Logistic")
     val sc = new SparkContext(conf)
 
-    val (trainData, validData) = LogisticValidate.prepareData(sc)
+    val (trainData, validData) = LogisticValidate.prepareWordCount(sc, TokenizerUtil.formatSet,13)
 
-    val numClasses = 52
+    val numClasses = 71
     val categoricalFeaturesInfo = Map[Int, Int]()
     val impurity = "gini"
-    val maxDepth = 5
-    val maxBins = 32
-    val dicisionTreeModel = DecisionTree.trainClassifier(trainData, numClasses, categoricalFeaturesInfo,
+    val maxDepth = 30
+    val maxBins = 64
+    val decisionTreeModel = DecisionTree.trainClassifier(trainData, numClasses, categoricalFeaturesInfo,
       impurity, maxDepth, maxBins)
 
-    val result = validData.map {
-      case LabeledPoint(label, features) =>
-        val prediction = dicisionTreeModel.predict(features)
-        (prediction, label)
-    }
+    val predictionsAndLabels = validData.map(example =>
+      (decisionTreeModel.predict(example.features), example.label)
+    )
+    val accuracy = new MulticlassMetrics(predictionsAndLabels).accuracy
 
-    val metrics = new MulticlassMetrics(result)
-    val precision = metrics.accuracy
-    println("Precision = " + precision)
+    println("accuracy:" + accuracy)
   }
 }

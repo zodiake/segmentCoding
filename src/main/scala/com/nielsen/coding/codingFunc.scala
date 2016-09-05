@@ -6,37 +6,30 @@ class codingFunc extends java.io.Serializable {
 
   /**
     * KWLC keyword list coding
-    *
-    * @param itemdesc target item description
-    * @param wordlist key word list
-    * @return 该条目属于哪个品牌
+    * @itemdesc target item description
+    * @wordlist key word list
     */
 
   def KWLC(itemdesc: String, wordlist: List[(String, String)], parentlist: List[(String, String)]): String = {
-    //描述当中可能包含英文，先将英文剔除，保留
     val pattern = "[a-zA-z]+".r //英文正则
     val itemdesc_e = pattern.findAllIn(itemdesc).toList //英文 非字符串 为完全匹配英文单词
-    //result:(index出现的位置,(segmentid,segmentName),fno)
     val result = wordlist.map(x => (multifindDesc(itemdesc, x._2), x)) //遍历列表中所有的关键词
-        .filter(_._1 >= 0) //去掉未匹配上的词
-        .map(x => (x._1, x._2, parentlist.filter(y => y._1 == x._2._1).head._2)) //增加parentid
+      .filter(_._1 >= 0) //去掉未匹配上的词
+      .map(x => (x._1, x._2, parentlist.filter(y => y._1 == x._2._1).head._2)) //增加parentid
     val p = result.map(_._3).filter(_ != "-").distinct //取出distinct的parentid  ---?????
-    //todo val n = result.filter(x => p.exists(y => y == x._2._1)).map(_._2._1) //获取segmentid==fno的条目
-    val n = result.filter(x => p.exists(y => y == x._2._1)).map(_._2._2) //获取segmentid==fno的条目
-    //result.foreach(println)(1,2,3,4,5,6)(2,3,6)()
+    val n = result.filter(x => p.exists(y => y == x._2._1)).map(_._2._2) //选出parentid不为“-”的-- parent id brand key worlds
+    //result.foreach(println)
     //val re1 = result.filter(x => x._3 != x._2._1 ||(x._3 == x._2._1 && result.count(y => y._3 == x._3)==1))
-    //历史原因，原先代码不是通过segmentid 判断是否重复而是通过desc来判断是否重复，
-    //todo val re1 = result.filter(x => !n.exists(y => y == x._2._1))
     val re1 = result.filter(x => !n.exists(y => y == x._2._2)) //去掉存在parentid的
     //出现一个词包含另一个词的情况时,取长的词
     var result_f = re1.filter(x => re1.filter(y =>
-        y._2._2.indexOf(x._2._2) >= 0 &&
-          y._2._2.size != x._2._2.size).isEmpty)
+      y._2._2.indexOf(x._2._2) >= 0 &&
+        y._2._2.size != x._2._2.size).isEmpty)
     //result_f.filter(x => result_f.filter(y => y._2._2.indexOf(x._2._2) >= 0 && y._2._2.size != x._2._2.size).isEmpty ).foreach(println)
     // 判断是否存在英文品牌被找到
     //re1.foreach(println)
     if (!re1.map(x => findEng(x._2._2)).filter(_ != "").isEmpty) {
-      result_f = result_f.filter(x => itemdesc_e.indexOf(x._2._2) > 0 && findEng(x._2._2) == "") //按照完整的英文单词筛选
+      result_f = result_f.filter(x => ! (itemdesc_e.indexOf(x._2._2) < 0 && findEng(x._2._2) != "" )) //按照完整的英文单词筛选
     }
     //result_f.foreach(println)
     if (!result_f.isEmpty) {
@@ -54,9 +47,8 @@ class codingFunc extends java.io.Serializable {
 
   /**
     * MKWLC multi keyword list coding
-    *
-    * @param itemdesc target item description
-    * @param multiwordlist multi key word list
+    * @itemdesc target item description
+    * @multiwordlist multi key word list
     */
 
   def MKWLC(itemdesc: String, multiwordlist: List[List[(String, String)]]): String = {
@@ -76,15 +68,14 @@ class codingFunc extends java.io.Serializable {
 
   /**
     * findDesc find desc split by "/"
-    *
     * @itemdesc target item description
     * @targetdesc multi desc
     */
   /*
- * spilt by "/" -- every str can be found in itemdesc -- return the min index
- *              -- else -- return -- -1
- *  targetdesc has no "/"  -- return the index of the targetdesc in itemdesc.
- */
+   * spilt by "/" -- every str can be found in itemdesc -- return the min index
+   *              -- else -- return -- -1
+   *  targetdesc has no "/"  -- return the index of the targetdesc in itemdesc.
+   */
   /*private def findDesc(itemdesc: String, targetdesc: String): Int = {
     if (targetdesc.indexOf("/") >= 0) { //如果存在斜杠分割的字符串则逐个寻找
       val targetlist = targetdesc.split("/").toList.map(x => itemdesc.indexOf(x))
@@ -98,42 +89,41 @@ class codingFunc extends java.io.Serializable {
 
   private def findDesc(itemdesc: String, targetdesc: String): Int = {
     val pattern = "[a-zA-z]+".r //英文正则
-    // val itemdesc_e = pattern.findAllIn(itemdesc).toList.map(_.toUpperCase()) //英文 非字符串 为完全匹配英文单词
-    val itemdesc_e_1 = pattern.findAllIn(itemdesc).toList.map(x => (x.toUpperCase(), itemdesc.indexOf(x))).toMap
-    if (targetdesc.indexOf("/") >= 0) {
-      //如果存在斜杠分割的字符串则逐个寻找
-      val targetlist = targetdesc.split("/").toList.map(x =>
-        if (findEng(x) == "") {
-          itemdesc.indexOf(x)
-        } else {
-          //itemdesc_e.indexOf(x)   //英文则按全字匹配
-          try {
-            itemdesc_e_1(targetdesc)
-          } catch {
-            case t: Exception => -1 // TODO: handle error
-          }
-        })
-      if (targetlist.min >= 0) {
-        //如果每个分割的字符串都能找到则返回最前面的位置
+    val itemdesc_e = pattern.findAllIn(itemdesc).toList.map(_.toUpperCase()) //英文 非字符串 为完全匹配英文单词
+    // val itemdesc_e_1 = pattern.findAllIn(itemdesc).toList.map(x=>(x.toUpperCase(),itemdesc.indexOf(x))).toMap
+    if (targetdesc.indexOf("/") >= 0) { //如果存在斜杠分割的字符串则逐个寻找
+    val targetlist = targetdesc.split("/").toList.map(x =>
+      if(findEng(x) == ""){
+        itemdesc.indexOf(x)
+      }else{
+        itemdesc_e.indexOf(x)   //英文则按全字匹配
+        /*try {
+           itemdesc_e_1.apply(x)
+         } catch {
+           case t: Exception => -1// TODO: handle error
+         }*/
+      })
+      if (targetlist.min >= 0) { //如果每个分割的字符串都能找到则返回最前面的位置
         targetlist.min
       } else
         -1
-    } else if (findEng(targetdesc) == "") {
+    } else
+    if(findEng(targetdesc) == ""){
       itemdesc.indexOf(targetdesc)
-    } else {
-      // itemdesc_e.indexOf(targetdesc)
-      try {
-        itemdesc_e_1(targetdesc)
-      } catch {
-        case t: Exception => -1 // TODO: handle error
-      }
+    }else{
+      itemdesc_e.indexOf(targetdesc)
+      /*try {
+          itemdesc_e_1.apply(targetdesc)
+        } catch {
+          case t: Exception => -1// TODO: handle error
+        }*/
     }
   }
 
+
   /**
     * findEng judge if the English is exactly only has English character
-    *
-    * @param: itemdesc target item description
+    * @itemdesc target item description
     */
 
   private def findEng(itemdesc: String): String = {
@@ -154,20 +144,16 @@ class codingFunc extends java.io.Serializable {
   def multifindDesc(itemdesc: String, targetdesc: String): Int = {
     var flag = true
     val index = targetdesc.indexOf("/{")
-    if (targetdesc.indexOf("/{") >= 0) {
-      if (targetdesc.indexOf(";") >= 0) {
-        /*
-        *  val lst = targetdesc.split(";").map(x => findNagtiveDesc(itemdesc,x))
-        *  可以删除对于filter的判断？
-        */
-        val lst = targetdesc.split(";").filter(_.indexOf("/{") >= 0).map(x => findNagtiveDesc(itemdesc, x))
-        if (lst.max >= 0) {
+    if(targetdesc.indexOf("/{")>=0){
+      if(targetdesc.indexOf(";")>=0){
+        val lst = targetdesc.split(";").filter(_.indexOf("/{")>=0).map(x => findNagtiveDesc(itemdesc,x))
+        if(lst.max>=0){
           flag = false
           return lst.max
         }
-      } else {
-        val tmp = findNagtiveDesc(itemdesc, targetdesc)
-        if (tmp >= 0) {
+      }else {
+        val tmp = findNagtiveDesc(itemdesc,targetdesc)
+        if(tmp>=0){
           flag = false
           return tmp
 
@@ -175,24 +161,21 @@ class codingFunc extends java.io.Serializable {
       }
     }
 
-    if (flag) {
-      if (targetdesc.indexOf(";") >= 0) {
-        //如果存在分号分割的字符串只要存在一个
-        val targetlist = targetdesc.split(";").filter(x => x.indexOf("/{") < 0).map(x => findDesc(itemdesc, x)).toList // return the index of each string spilt by ";"
-        if (targetlist.exists {
-          _ > -1
-        }) {
+    if(flag){
+      if (targetdesc.indexOf(";") >= 0) { //如果存在分号分割的字符串只要存在一个
+      val targetlist = targetdesc.split(";").filter(x=>x.indexOf("/{")<0).map(x => findDesc(itemdesc, x)).toList // return the index of each string spilt by ";"
+        if (targetlist.exists { _ > -1 }) {
           targetlist.filter(_ > -1).min
         } else
           -1
       } else
         findDesc(itemdesc, targetdesc)
-    } else {
+    }else {
       -1
     }
   }
 
-  def findNagtiveDesc(itemdesc: String, targetdesc: String): Int = {
+  def findNagtiveDesc(itemdesc: String, targetdesc: String):Int = {
     /*val targetlist = targetdesc.replace("/{", "|").split("\\|").toList.map(_.replace("}", "")).map(x=>findDesc1(itemdesc,x))
     if(targetlist.min>=0){
        targetlist.min
@@ -200,34 +183,27 @@ class codingFunc extends java.io.Serializable {
       -1
     }*/
     val targetlist = targetdesc.replace("/{", "|").split("\\|").toList.map(_.replace("}", ""))
-    var include = findDesc(itemdesc, targetlist(0))
-    var notInclude = findDesc1(itemdesc, targetlist(1))
-    if (include >= 0 && notInclude < 0) {
+    var include = findDesc(itemdesc,targetlist(0))
+    var notInclude = findDesc1(itemdesc,targetlist(1))
+    if(include>=0 && notInclude <0){
       include
-    } else {
+    }else {
       -1
     }
   }
 
   private def findDesc1(itemdesc: String, targetdesc: String): Int = {
 
-    if (targetdesc.indexOf("$") >= 0) {
-      //如果存在斜杠分割的字符串则逐个寻找
-      val targetlist = targetdesc.split("\\u0024").toList.map(x => findDesc(itemdesc, x))
-      if (targetlist.max >= 0) {
-        //如果每个分割的字符串有一个存在则返回当前的位置
+    if (targetdesc.indexOf("$") >= 0) { //如果存在斜杠分割的字符串则逐个寻找
+    val targetlist = targetdesc.split("\\u0024").toList.map(x => findDesc(itemdesc,x))
+      if (targetlist.max>=0) { //如果每个分割的字符串有一个存在则返回当前的位置
         targetlist.max
       } else
         -1
     } else
-      findDesc(itemdesc, targetdesc)
+      findDesc(itemdesc,targetdesc)
   }
 
-  /*
-   * @param itemdesc: 具体的item的描述
-   * @param packname: 某一个单位毫升或者ml
-   * @param packlist: nil
-   */
   def PacksizeCoding(itemdesc: String, packname: String, packlist: List[Float]): List[Float] = {
     if (itemdesc.indexOf(packname) >= 0) {
       val packpos = itemdesc.indexOf(packname)
@@ -240,13 +216,9 @@ class codingFunc extends java.io.Serializable {
       if (!rightString.isEmpty()) {
         if (rightString.apply(0) == '*' || rightString.apply(0).toUpper == 'X') {
           rightPack = toRightCoding(rightString.drop(1), c)
-        } else {
-          rightPack = 1
-        }
+        } else { rightPack = 1 }
         ((leftPack * rightPack) :: packlist) ++ result
-      } else {
-        (leftPack :: packlist) ++ result
-      }
+      } else { (leftPack :: packlist) ++ result }
     } else List()
   }
 
@@ -282,7 +254,7 @@ class codingFunc extends java.io.Serializable {
   }
 
   def toRightCoding(x: String, y: List[Char]): Float = {
-    var temp = x
+    var temp =  x.trim()
     var num = 0.toFloat
     try {
       num = y.mkString.toFloat
@@ -303,7 +275,8 @@ class codingFunc extends java.io.Serializable {
   }
 
   //全角转半角
-  private def DSC2BSC(input: Char): Char = {
+  private def DSC2BSC(input: Char): Char =
+  {
     var i = input;
     if (i == '\u3000') {
       i = ' ';
@@ -313,6 +286,7 @@ class codingFunc extends java.io.Serializable {
     return i;
 
   }
+
 
   def replaceC2E(CS: String): String = {
     if (CS == "克") {
@@ -337,19 +311,19 @@ class codingFunc extends java.io.Serializable {
 
   }
 
-  def packsizetransform(input: (String, String)): (String, String) = {
+  def packsizetransform(input:(String, String)):(String, String) = {
     var num = input._1.toFloat
     var unit = replaceC2E(input._2)
-    if (unit == "KG") {
+    if(unit == "KG"){
       num = 1000 * num
       unit = "G"
-    } else if (unit == "L") {
+    }else if(unit == "L"){
       num = 1000 * num
       unit = "ML"
-    } else if (unit == "OZ") {
+    }else if(unit == "OZ"){
       num = 28.3495231.toFloat * num
       unit = "G"
-    } else if (unit == "J") {
+    }else if(unit == "J"){
       num = 500 * num
       unit = "G"
     }
@@ -357,40 +331,42 @@ class codingFunc extends java.io.Serializable {
     return (num.toString, unit)
   }
 
-  def checkprice(input_price: String, pricerange: String): Boolean = {
+
+  def checkprice(input_price:String, pricerange:String):Boolean = {
     var lowprice = 0.toFloat
     var highprice = 0.toFloat
     var price = -1.toFloat
-    try {
+    try{
       lowprice = pricerange.split("-").head.toFloat
       highprice = pricerange.split("-").reverse.head.toFloat
       price = input_price.toFloat
-    } catch {
-      case e: NumberFormatException => println(e)
+    }catch {
+      case e:NumberFormatException => println(e)
     }
 
-    if (price > lowprice && price <= highprice) {
+    if(price > lowprice && price <= highprice){
       return true
-    } else {
+    }else {
       return false
     }
 
   }
 
-  def getBundleSegId(itemDesc: String, bundleSegConf: List[(String, String)]): String = {
+  def getBundleSegId(itemDesc:String,bundleSegConf:List[(String,String)]):String={
     val otherId = bundleSegConf.filter(_._2.toUpperCase().equals("OTHERS")).head._1
-    val segConf = bundleSegConf.map { x => (x._1, x._2.split("/")) }.filter(_._2.length > 1)
+    val segConf = bundleSegConf.map{x=>(x._1,x._2.split("/"))}.filter(_._2.length>1)
     var segId = otherId
     breakable(
-      segConf.map { x =>
-        if (x._2.length == itemDesc.split("/").length) {
+      segConf.map{x=>
+        if(x._2.length == itemDesc.split("/").length){
           val indexLst = x._2.map { x => itemDesc.indexOf(x) }
-          if (indexLst.min >= 0) {
+          if(indexLst.min>=0){
             segId = x._1
             break
           }
         }
-      })
+      }
+    )
     return segId
   }
 

@@ -273,6 +273,8 @@ object RawDataFormat {
           storeCode = "20510"
         else if (x.source == "商城")
           storeCode = "20511"
+        else if (x.source == "环球购")
+          storeCode = "20512"
         "" + "," + "\"" + x.city + "\"" + "," + x.prodId + "," + storeCode + "," + "FEINIU" + "," + x.cateLv2 + "," + x.cateLv3 + "," + x.cateLv4 + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "" + "\"" + "," + "" + "," + "\"" + x.prodDesc + "\"" + "," + x.salesPrice + "," + "1" + "," + x.salesAmount + "," + x.totalAmt.trim() + "," + x.actBuyPrice + "," + x.date + "," + "\"" + x.source + "\"" + "," + x.attribute.trim()
       })
       deleteExistPath(pathRaw)

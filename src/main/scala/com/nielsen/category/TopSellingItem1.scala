@@ -13,7 +13,7 @@ object TopSellingItem1 {
     conf.setAppName("TopSellingItem")
    // conf.setMaster("local")
     val sc = new SparkContext(conf)
-    
+
     val catogryAddressLst = sc.textFile(args(0)).collect()
     val salesAddresslst = sc.textFile(args(1)).collect()
     val tmpCategory = Array[String]()
@@ -32,29 +32,29 @@ object TopSellingItem1 {
     val cateText = new PairRDDFunctions(cateRdd.map { x => x.split(",",-1)}.map { x => (x(1),(x(4),x(0),x(2)))})
     //(itemId,((itemDesc,cateCode,brand),salesValue)) -- leftoutjoin
     //(cateCode,(itemId,itemDesc,brand,salesValue))
-    
+
     val cateWithSales = cateText.leftOuterJoin(salesText).filter(!_._2._2.isEmpty)
     val totalText = new PairRDDFunctions(cateWithSales.map{x=>(x._2._1._2,(x._1,x._2._1._1,x._2._1._3,x._2._2.get.toDouble))})
                     .groupByKey()
-                    
+
     //各个category 的sales总和
     val totalSalesForCate = totalText.map{x=>(x._1,caculateTotalSales(x._2)*0.8)}
-    
-    totalSalesForCate.collect().toList.foreach(println(_))
-    
+
+    //totalSalesForCate.collect().toList.foreach(println(_))
+
     //取出排在sales总和前80%的产品
     val topSellingItem = new PairRDDFunctions(totalText).leftOuterJoin(totalSalesForCate).map{x=>(x._1,x._2._1.toList.sortBy(-_._4),x._2._2.get)}
                          .map{x=>get80PercentItem(x._1,x._2,x._3)}
-    
+
     val result = topSellingItem.collect().map { x => x.mkString("\n") }
-    
+
     val util = new codingUtil
     util.deleteExistPath(args(2))
     sc.parallelize(result).saveAsTextFile(args(2))
-     
-  
+
+
   }
-  
+
   def caculateTotalSales(iterator:Iterable[(String, String, String, Double)]):Double = {
     var total = 0.0
     for(iter<- iterator){
@@ -62,7 +62,7 @@ object TopSellingItem1 {
     }
     total
   }
-  
+
   def get80PercentItem(cateCode:String,itemLst:List[(String,String,String,Double)],value:Double):ArrayBuffer[(String)]={
     var selectedItemLst = ArrayBuffer[(String)]()
     var tempValue:Double = 0.0
@@ -80,8 +80,8 @@ object TopSellingItem1 {
      val item = itemLst.apply(0)
      selectedItemLst += item._1+","+item._2+","+cateCode+","+item._3
    }
-   println(selectedItemLst.mkString("\n"))
+   //println(selectedItemLst.mkString("\n"))
    selectedItemLst
   }
-   
+
 }

@@ -1,7 +1,7 @@
 package com.ml
 
+import com.ml.tokenizer.TokenizerUtil
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
-import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.RandomForest
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -14,27 +14,15 @@ object RandomForestTest {
     val conf = new SparkConf().setMaster("local[*]").setAppName("Logistic")
     val sc = new SparkContext(conf)
 
-    val (trainData, validData) = LogisticValidate.prepareData(sc)
+    val (trainData, validData) = LogisticValidate.prepareWordCount(sc, TokenizerUtil.formatSet)
 
-    val numClasses = 52
-    val categoricalFeaturesInfo = Map[Int, Int]()
-    val numTrees = 6 // Use more in practice.
-    val featureSubsetStrategy = "auto" // Let the algorithm choose.
-    val impurity = "gini"
-    val maxDepth = 5
-    val maxBins = 32
-
-    val model = RandomForest.trainClassifier(trainData, numClasses, categoricalFeaturesInfo,
-      numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins)
-
-    val result = validData.map {
-      case LabeledPoint(label, features) =>
-        val prediction = model.predict(features)
-        (prediction, label)
-    }
-
-    val metrics = new MulticlassMetrics(result)
-    val precision = metrics.accuracy
-    println("Precision = " + precision)
+    val model = RandomForest.trainClassifier(trainData, 52, Map[Int, Int](), 200, "auto", "gini", 10, 100)
+    val predictionsAndLabels = validData.map(example =>
+      (model.predict(example.features), example.label)
+    )
+    val accuracy =
+      new MulticlassMetrics(predictionsAndLabels).accuracy
+    print(accuracy)
   }
+
 }
