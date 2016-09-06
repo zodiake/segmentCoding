@@ -36,7 +36,7 @@ object TMTBFormat {
     val res = descFormat.map(row => {
       val array = row.split(",")
       if (array(3) == "B" || array(3) == "C")
-        if (array(10).indexOf("天猫超市") == 2)
+        if (array(12).indexOf("天猫超市") == 2)
           array(3) = "S"
       array.mkString(",")
     })
