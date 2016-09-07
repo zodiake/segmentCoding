@@ -158,7 +158,14 @@ object RawDataFormat {
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }
     if (dataSrc == "SUNING") {
-      val suNingRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 12)
+      val suNingRaw = sc.textFile(pathRaw)
+        .map(i => {
+          if (i.endsWith("\t"))
+            i + " "
+          else
+            i
+        })
+        .filter(x => x.split("\t").length == 12)
       val rawRdd = suNingRaw.map(row => {
         val value = row.split("\t")
         new SuNingRaw(
