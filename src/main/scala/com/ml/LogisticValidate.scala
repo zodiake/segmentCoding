@@ -119,9 +119,8 @@ object LogisticValidate {
   }
 
   def prepareWordCount(sc: SparkContext, tokenizer: Iterator[(String, String)] => Iterator[(String, List[String])], n: Int = 14) = {
-    val sourceRDD = sc.textFile("d:/wangqi/sock.train")
+    val sourceRDD = sc.textFile("d:/wangqi/skin.train")
     val sourceData = sourceRDD
-      .mapPartitionsWithIndex { (idx, iter) => if (idx == 0) iter.drop(1) else iter }
       .map(i => i.split(","))
       .map(i => (i(0), i(1)))
       .mapPartitions(tokenizer)
@@ -130,7 +129,7 @@ object LogisticValidate {
 
     val keys = sourceData.keys.collect()
 
-    val validRDD = sc.textFile("d:/wangqi/sock.test")
+    val validRDD = sc.textFile("d:/wangqi/skin.test")
     val data2 = validRDD
       .mapPartitionsWithIndex { (idx, iter) => if (idx == 0) iter.drop(1) else iter }
       .map(i => i.split(","))
@@ -157,9 +156,9 @@ object LogisticValidate {
     })
     */
 
-    val trainData = tf.zip(label).map(i => LabeledPoint(CategoryUtils.categoryToInt(i._2), i._1.toDense))
+    val trainData = tf.zip(label).map(i => LabeledPoint(CategoryUtils.skinCategoryToInt(i._2), i._1.toDense))
 
-    val testData = tf2.zip(validLabel).map(i => LabeledPoint(CategoryUtils.categoryToInt(i._2), i._1.toDense))
+    val testData = tf2.zip(validLabel).map(i => LabeledPoint(CategoryUtils.skinCategoryToInt(i._2), i._1.toDense))
 
     (trainData, testData)
 

@@ -10,8 +10,10 @@ object Sample {
     val conf = new SparkConf().setMaster("local").setAppName("Logistic")
     val sc = new SparkContext(conf)
 
-    val sourceRDD = sc.textFile("hdfs://hkgrherfpp001:9000/CATEGORY_CODED_DATA/TMTB/20161407/TMTB.catcoded_1")
-    sourceRDD.take(1).foreach(println)
+    val sourceRDD = sc.textFile("d:/wangqi/SKIN_06_DATA.csv")
+    //val keys=sourceRDD.map(_.split(",")).map(i => (i(0), i(1))).keys.distinct()
+    //keys.foreach(println)
+    println(sourceRDD.count())
 
     /*
     val s = sourceData.map(_._2).flatMap(i => i.map(j => (j, 1))).reduceByKey(_ + _).filter(_._2 == 1).keys.collect()

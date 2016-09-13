@@ -366,12 +366,14 @@ object totalcoding_1 {
 
     val packsize_conf = itemmaster_packsize(catCode, configFileNew)
     if (packsizeFlg) {
-      val packsize = packsize_conf.map(y =>
-        (if (!codingFunc.PacksizeCoding(item.description, y, List()).isEmpty) {
-          codingFunc.PacksizeCoding(item.description, y, List()).max.toString() //两个相同单位取了最大的
+      val packsize = packsize_conf.map(y => {
+        val list = codingFunc.PacksizeCoding(item.description, y, List())
+        (if (!list.isEmpty) {
+          list.max.toString() //两个相同单位取了最大的
         } else {
           ""
-        }, y)).filter(_._1 != "").filter(_._1 != "0.0").map(x => codingFunc.packsizetransform(x))
+        }, y)
+      }).filter(_._1 != "").filter(_._1 != "0.0").map(x => codingFunc.packsizetransform(x))
         .distinct.sortBy(_._1.toDouble).reverse.map(x => x._1 + x._2)
       if (!packsize.isEmpty) {
         item.packsize = packsize.head //所有单位之间区最大的
