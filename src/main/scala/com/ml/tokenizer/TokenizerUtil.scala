@@ -17,7 +17,7 @@ object TokenizerUtil {
   def formated(i: Iterator[(String, String)]) = {
     import collection.JavaConverters._
     val c = List("批发", "包邮", "进口", "天猫", "日本", "其他", "other", "小样", "i", "保湿", "正品", "代购").asJava
-    val skinStopWords=List("正品","other","代购","韩国","现货","香港","小样","特价","台湾","美国","原装").asJava
+    val skinStopWords=List("正品","other","代购","韩国","现货","香港","小样","特价","台湾","美国","原装","i","直邮","新品","进口","系列","港代","国代","天然","其他","包邮","日本","柜正","专柜","玫瑰","男士","本代","法国","德国","新品").asJava
     val analyzer = new CJKWithoutNumberAnalyzer(new CharArraySet(skinStopWords, false))
     for (s <- i)
       yield {
@@ -38,7 +38,7 @@ object TokenizerUtil {
   def formatSet(i: Iterator[(String, String)]) = {
     import collection.JavaConverters._
     val c = List("批发", "包邮", "进口", "天猫", "日本", "其他", "克", "袋", "干", "包", "片", "装", "满", "斤", "盒", "元", "条", "粒", "个", "手", "件", "送", "邮", "的", "一", "份", "支", "三", "种", "块", "颗").asJava
-    val skinStopWords=List("正品","other","代购","韩国","现货","香港","小样","特价","台湾","美国","原装").asJava
+    val skinStopWords=List("正品","other","代购","韩国","现货","香港","小样","特价","台湾","美国","原装","i","直邮","新品","进口","系列","港代","国代","天然","其他","包邮","日本","柜正","专柜","玫瑰","男士","本代","法国","德国","新品").asJava
     val analyzer = new CJKWithoutNumberAnalyzer(new CharArraySet(skinStopWords, false))
     for (s <- i)
       yield {
@@ -88,7 +88,7 @@ object TokenizerUtil {
   }
 
   def standardFormat(i: Iterator[(String, String)]) = {
-    val analyzer = new StandardWithNoNumberAnalyzer();
+    val analyzer = new StandardWithNoNumberAnalyzer()
     for (s <- i)
       yield {
         val tokenStream = analyzer.tokenStream(null, new StringReader(s._2))

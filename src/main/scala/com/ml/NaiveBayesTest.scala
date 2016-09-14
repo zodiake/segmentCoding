@@ -21,9 +21,9 @@ object NaiveBayesTest {
       .mapPartitionsWithIndex { (idx, iter) => if (idx == 0) iter.drop(1) else iter }
       .map(i => i.split(","))
       .map(i => (i(0), i(1)))
-      .mapPartitions(TokenizerUtil.formatSet)
+      .mapPartitions(TokenizerUtil.formated)
 
-    val s = sourceData.map(_._2).flatMap(i => i.map(j => (j, 1))).reduceByKey(_ + _).filter(_._2 == 1).keys.collect()
+    val rareTokens = sourceData.map(_._2).flatMap(i => i.map(j => (j, 1))).reduceByKey(_ + _).filter(_._2 == 1).keys.collect()
 
     val keys = sourceData.keys.collect()
 
@@ -33,33 +33,32 @@ object NaiveBayesTest {
       .map(i => i.split(","))
       .map(i => (i(0), i(1)))
       .filter(i => keys.contains(i._1))
-      .filter(i => !s.contains(i._2))
-      .mapPartitions(TokenizerUtil.formatSet)
+      .mapPartitions(TokenizerUtil.formated)
 
-    val data = sourceData.map(_._2).filter(!s.contains(_))
+    val data = sourceData.map(_._2).filter(!rareTokens.contains(_))
     val label = sourceData.map(_._1)
 
-    val validData = data2.map(_._2)
+    val validData = data2.map(_._2).filter(!rareTokens.contains(_))
     val validLabel = data2.map(_._1)
 
-    val dim = math.pow(2, 14).toInt
-    val hashingTF = new HashingTF(dim)
+    val dim = math.pow(2, 13).toInt
+    val hashingTF = new HashingTF(dim).setBinary(true)
     val tf = hashingTF.transform(data)
     val tf2 = hashingTF.transform(validData)
 
     val trainData = tf.zip(label).map(i => LabeledPoint(i._2.toInt, i._1.toDense))
 
-    val model = NaiveBayes.train(trainData, lambda = 1.0, modelType = "multinomial")
+    val model = NaiveBayes.train(trainData, lambda = 1.0, modelType = "bernoulli")
 
     val testData = tf2.zip(validLabel).map(i => LabeledPoint(i._2.toInt, i._1.toDense))
 
     val predictionAndLabel = testData.map(p => (model.predict(p.features).toInt, p.label.toInt))
 
     val accuracy = 1.0 * predictionAndLabel.filter(x => x._1 == x._2).count() / validData.count()
-    //println(accuracy)
+    println(accuracy)
 
     //predictionAndLabel.filter(i => i._1 != i._2).foreach(println)
-
+    /*
     val productData = sc.textFile("d:/wangqi/SKIN_06_DATA.csv").map(_.split(",")).map(i => (i(0), i(1))).mapPartitions(TokenizerUtil.formatSet)
     val productId = productData.map(_._1)
     val productFeatures = productData.map(_._2)
@@ -67,5 +66,6 @@ object NaiveBayesTest {
     val tfProduct = hashingTF.transform(productFeatures)
     val result = productId.zip(model.predict(tfProduct).map(_.toInt))
     result.saveAsTextFile("d:/wangqi/test/skin")
+    */
   }
 }
