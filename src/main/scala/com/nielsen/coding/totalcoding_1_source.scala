@@ -18,12 +18,14 @@ import com.nielsen.coding.bis.Bis
 object totalcoding_1_source {
 
   def main(args: Array[String]) {
+    System.setProperty("hadoop.home.dir", "C:/winutil/")
     if (args.length < 2) {
       System.err.println("Usage: <inputFile> <outputFile> <brand_list>")
       System.exit(1)
     }
 
     val conf = new SparkConf()
+    conf.setMaster("local")
     conf.setAppName("TotalCoding")
     val sc = new SparkContext(conf)
     var catlist = List[String]()
@@ -106,8 +108,9 @@ object totalcoding_1_source {
             ree = tempre.map(_._2.mkString("\n")) ++ ree
           }
         }
-        deleteExistPath(args(4) + "_" + i +".SEG")
-        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i +".SEG")
+        //deleteExistPath(args(4) + "_" + i +".SEG")
+        //ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i +".SEG")
+        ree.take(10).foreach(println)
         i = i+1
       }
 
