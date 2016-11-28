@@ -119,7 +119,7 @@ object LogisticValidate {
   }
 
   def prepareWordCount(sc: SparkContext, tokenizer: Iterator[(String, String)] => Iterator[(String, List[String])], n: Int = 14) = {
-    val sourceRDD = sc.textFile("d:/wangqi/skin.train")
+    val sourceRDD = sc.textFile("~/Documents/item_master_sample/train_filter/binary")
     val sourceData = sourceRDD
       .map(i => i.split(","))
       .map(i => (i(0), i(1)))
