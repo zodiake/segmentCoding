@@ -6,6 +6,9 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.{SparkConf, SparkContext}
 
+//商品编码,商品名称,销售数量,付款金额,系统国际条码,自报国际条码
+case class RedBaby(code: String, name: String, amount: Double, price: Double, inUnicode: String, unicode: String)
+
 object RawDataFormat {
 
   def main(args: Array[String]) {
@@ -21,9 +24,15 @@ object RawDataFormat {
       year = args(2)
       dataSrc = args(3) //TELECOM//苏宁易购
     } else if (args.length == 3) {
-      pathRaw = args(0)
-      pathUni = args(1)
-      dataSrc = args(2) //1mall/京东商城/飞牛网
+      if (args(1) == "RedBaby") {
+        pathRaw = args(0)
+        dataSrc="RedBaby"
+        year = args(2)
+      } else {
+        pathRaw = args(0)
+        pathUni = args(1)
+        dataSrc = args(2) //1mall/京东商城/飞牛网
+      }
     } else if (args.length == 5) {
       pathRaw = args(0) //raw data path
       pathUni = args(1) // website code map
@@ -37,6 +46,7 @@ object RawDataFormat {
 
     val conf = new SparkConf()
     conf.setAppName("DataFormat")
+    conf.setMaster("local")
     val sc = new SparkContext(conf)
     val templist = Array[String]()
     var universe = sc.parallelize(templist)
@@ -54,6 +64,16 @@ object RawDataFormat {
     var storeCode = ""
     if (!storeCodeArr.isEmpty) {
       storeCode = storeCodeArr.apply(0)
+    }
+
+    if (dataSrc == "RedBaby") {
+      val data = sc.textFile(pathRaw).map(_.split(",")).filter(x => x.length == 6).map {
+        i =>
+          val r = RedBaby(i(0), i(1), i(2).toDouble, i(3).toDouble, i(4), i(5))
+          s""","",${r.code},52491,"REDBABY",,"","","","","",${r.name},${r.price / r.amount},1,${r.price},${r.amount},${r.price / r.amount},${year.substring(0, 4)}-${year.substring(4)}-01,"", """.stripMargin
+      }
+      //data.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      data.take(20).foreach(println)
     }
 
     if (dataSrc == "TELECOMCROSS") {
@@ -343,14 +363,6 @@ object RawDataFormat {
     } else eng
   }
 
-  // TBD
-  def formatNum(num: Double, decimal: Int): String = {
-    var result = ""
-
-    return result
-
-  }
-
   def deleteExistPath(pathRaw: String) {
     val outPut = new Path(pathRaw.concat(".REFORMAT"))
     val hdfs = FileSystem.get(URI.create(pathRaw.concat(".REFORMAT")), new Configuration())
@@ -370,6 +382,14 @@ object RawDataFormat {
       date = year + "-" + month + "-" + "01"
     }
     return date
+  }
+
+  // TBD
+  def formatNum(num: Double, decimal: Int): String = {
+    var result = ""
+
+    return result
+
   }
 
   def formatDate1(str: String): String = {
