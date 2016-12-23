@@ -7,7 +7,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.{SparkConf, SparkContext}
 
 //商品编码,商品名称,销售数量,付款金额,系统国际条码,自报国际条码
-case class RedBaby(code: String, name: String, amount: Double, price: Double, inUnicode: String, unicode: String)
+case class RedBaby(code: String, name: String, amount: String, price: String)
 
 object RawDataFormat {
 
@@ -24,10 +24,14 @@ object RawDataFormat {
       year = args(2)
       dataSrc = args(3) //TELECOM//苏宁易购
     } else if (args.length == 3) {
-      if (args(1) == "RedBaby") {
+      if (args(2) == "RedBaby") {
         pathRaw = args(0)
         dataSrc="RedBaby"
-        year = args(2)
+        year = args(1)
+      } else if (args(2) == "JDNEW") {
+        pathRaw = args(0)
+        dataSrc = "JDNew"
+        pathUni = args(1) // website code map
       } else {
         pathRaw = args(0)
         pathUni = args(1)
@@ -45,8 +49,8 @@ object RawDataFormat {
     }
 
     val conf = new SparkConf()
-    conf.setAppName("DataFormat")
-    conf.setMaster("local")
+    //conf.setAppName("DataFormat")
+    //conf.setMaster("local")
     val sc = new SparkContext(conf)
     val templist = Array[String]()
     var universe = sc.parallelize(templist)
@@ -67,13 +71,15 @@ object RawDataFormat {
     }
 
     if (dataSrc == "RedBaby") {
-      val data = sc.textFile(pathRaw).map(_.split(",")).filter(x => x.length == 6).map {
+      val data = sc.textFile(pathRaw).map(_.split("\t")).filter(i => i.length >= 4).map {
         i =>
-          val r = RedBaby(i(0), i(1), i(2).toDouble, i(3).toDouble, i(4), i(5))
-          s""","",${r.code},52491,"REDBABY",,"","","","","",${r.name},${r.price / r.amount},1,${r.price},${r.amount},${r.price / r.amount},${year.substring(0, 4)}-${year.substring(4)}-01,"", """.stripMargin
+          val r = RedBaby(i(0), i(1), i(2), i(3))
+          val unit=if(r.amount.toDouble==0) 0 else r.price.toDouble/r.amount.toDouble
+          s""","",${r.code},52491,REDBABY,,,,,"","",,"${r.name}",${unit},1,${r.price},${r.amount},${unit},${year.substring(0, 4)}-${year.substring(6)}-01,"","""
       }
-      //data.saveAsTextFile(pathRaw.concat(".REFORMAT"))
-      data.take(20).foreach(println)
+      deleteExistPath(pathRaw)
+      data.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      //data.take(20).foreach(println)
     }
 
     if (dataSrc == "TELECOMCROSS") {
@@ -270,6 +276,42 @@ object RawDataFormat {
         else if (x.attribute == "京东自营")
           storeCode = "20120"
         x.province + "," + "\"" + x.city + "\"" + "," + x.productId + "," + storeCode + "," + "JD" + "," + x.cateLv2 + "," + x.cateLv3 + "," + "" + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.produtDesc + "\"" + "," + x.salesPrice + "," + 1 + "," + x.salesAmt + "," + x.totalAmt + "," + x.actBuyPrice + "," + x.date + "-01" + "," + "\"" + x.attribute + "\"" + "," + ""
+      })
+      deleteExistPath(pathRaw)
+      result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+    }
+
+    if (dataSrc == "JDNew") {
+      //新的ｊｄ数据多了一列年月，忽略即可
+      val jdRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 12)
+      val rawRdd = jdRaw.map(raw => {
+        val value = raw.split("\t")
+        new JDRaw(
+          value(6),
+          value(7),
+          value(0).replace("^\\xEF\\xBB\\xBF", ""),
+          value(2),
+          value(3),
+          value(4),
+          value(1).replace(",", " "),
+          divide(value(10), value(9)),
+          value(9),
+          value(10),
+          divide(value(10), value(9)),
+          value(5),
+          value(8))
+      })
+      /*
+        18,"1586",10090124297,20120,JD,休闲食品,糖果/巧克力,,,"福派园","",,"福派园 花生咸牛轧糖500g 手工牛扎糖 休闲零食品喜糖果软糖奶糖 花生味500g",16.2,1,1,16.2,16.2,2016-06-01,"京东平台",
+       */
+      val categoryLevel2Map = sc.broadcast(sc.textFile("hdfs://10.250.33.107:9000/CONF_DATA/JDMODEL_CONFIG.TXT").map(_.split(",")).map(i => (i(0), i(1))).collectAsMap()).value
+
+      val result = rawRdd.map(x => {
+        if (x.attribute == "京东平台")
+          storeCode = "20123"
+        else if (x.attribute == "京东自营")
+          storeCode = "20122"
+        x.province + "," + "\"" + x.city + "\"" + "," + x.productId + "," + storeCode + "," + categoryLevel2Map.getOrElse(x.cateLv2, "") + "," + x.cateLv2 + "," + x.cateLv3 + "," + "" + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.produtDesc + "\"" + "," + x.salesPrice + "," + 1 + "," + x.salesAmt + "," + x.totalAmt + "," + x.actBuyPrice + "," + x.date + "-01" + "," + "\"" + x.attribute + "\"" + "," + ""
       })
       deleteExistPath(pathRaw)
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))

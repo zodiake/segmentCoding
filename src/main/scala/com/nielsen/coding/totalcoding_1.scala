@@ -64,7 +64,6 @@ object totalcoding_1 {
           val seglist = configFile.filter(x => x(3) != "BRAND" && !x(3).contains("SUBBRAND") && x(3) != "PACKSIZE" && x(3) != "PRICETIER" && x(3) != "CATEGORY")
             .map(_ (3)).distinct
           val subbrand_namelist = configFile.filter(_ (3).contains("SUBBRAND")).map(_ (3)).distinct
-          val configFileNew = configFile.filter(x => x(3) != "CATEGORY")
           val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, args(5), KRAFile, cateCodeCombine, segNoCombine))
 
           if (args(5).contains("PACKSIZE") || args(5) == "ALL") {
@@ -103,9 +102,8 @@ object totalcoding_1 {
             ree = tempre.map(_._2.mkString("\n")) ++ ree
           }
         }
-        //deleteExistPath(args(4) + "_" + i + ".SEG")
-        //ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
-        ree.take(10).foreach(println)
+        deleteExistPath(args(4) + "_" + i + ".SEG")
+        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
         i = i + 1
       }
 
@@ -367,14 +365,12 @@ object totalcoding_1 {
 
     val packsize_conf = itemmaster_packsize(catCode, configFileNew)
     if (packsizeFlg) {
-      val packsize = packsize_conf.map(y => {
-        val list = codingFunc.PacksizeCoding(item.description, y, List())
-        (if (!list.isEmpty) {
-          list.max.toString() //两个相同单位取了最大的
+      val packsize = packsize_conf.map(y =>
+        (if (!codingFunc.PacksizeCoding(item.description, y, List()).isEmpty) {
+          codingFunc.PacksizeCoding(item.description, y, List()).max.toString() //两个相同单位取了最大的
         } else {
           ""
-        }, y)
-      }).filter(_._1 != "").filter(_._1 != "0.0").map(x => codingFunc.packsizetransform(x))
+        }, y)).filter(_._1 != "").filter(_._1 != "0.0").map(x => codingFunc.packsizetransform(x))
         .distinct.sortBy(_._1.toDouble).reverse.map(x => x._1 + x._2)
       if (!packsize.isEmpty) {
         item.packsize = packsize.head //所有单位之间区最大的
