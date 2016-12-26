@@ -70,16 +70,23 @@ object RawDataFormat {
       storeCode = storeCodeArr.apply(0)
     }
 
+    /*
+    "" + "," + "\"" + x.location + "\"" + "," + x.prodId + "," + storeCode + "," + "1mall" + "," + x.cateLvl2Nm + "," + x.cateLvl3Nm + ","
+    + x.cateLvl4Nm + "," + x.cateLvLeaf + "," + "\"" + x.brand.replace(",", " ") + "\"" + "," + "\"" + "\"" + "," +
+      "" + "," + "\"" + x.prodNm.replace(",", " ") + "\"" + "," + x.soldPrice + ","
+    + 1 + "," + x.soldNum + "," + x.soldAmount + "," + x.soldActAmount + "," + x.date + "-01" + "," + "\"" + x.bizType.replace(",", " ") + "\"" + "," + ""
+    */
+
     if (dataSrc == "RedBaby") {
       val data = sc.textFile(pathRaw).map(_.split("\t")).filter(i => i.length >= 4).map {
         i =>
           val r = RedBaby(i(0), i(1), i(2), i(3))
           val unit=if(r.amount.toDouble==0) 0 else r.price.toDouble/r.amount.toDouble
-          s""","",${r.code},52491,REDBABY,,,,,"","",,"${r.name}",${unit},1,${r.price},${r.amount},${unit},${year.substring(0, 4)}-${year.substring(6)}-01,"","""
+          s""","",${r.code},52491,REDBABY,,,,,"","",,"${r.name}",${unit},1,${r.amount},${r.price},${unit},${year.substring(0, 4)}-${year.substring(6)}-01,"","""
       }
       deleteExistPath(pathRaw)
       data.saveAsTextFile(pathRaw.concat(".REFORMAT"))
-      //data.take(20).foreach(println)
+      //data.take(1).foreach(println)
     }
 
     if (dataSrc == "TELECOMCROSS") {
