@@ -16,6 +16,6 @@ class JDRaw (
     val totalAmt:String,
     val actBuyPrice:String,
     val date:String,
-    val attribute:String
-
+    val attribute:String,
+    val global:String
 )extends Serializable

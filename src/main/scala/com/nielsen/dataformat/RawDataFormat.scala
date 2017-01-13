@@ -26,7 +26,7 @@ object RawDataFormat {
     } else if (args.length == 3) {
       if (args(2) == "RedBaby") {
         pathRaw = args(0)
-        dataSrc="RedBaby"
+        dataSrc = "RedBaby"
         year = args(1)
       } else if (args(2) == "JDNEW") {
         pathRaw = args(0)
@@ -81,7 +81,7 @@ object RawDataFormat {
       val data = sc.textFile(pathRaw).map(_.split("\t")).filter(i => i.length >= 4).map {
         i =>
           val r = RedBaby(i(0), i(1), i(2), i(3))
-          val unit=if(r.amount.toDouble==0) 0 else r.price.toDouble/r.amount.toDouble
+          val unit = if (r.amount.toDouble == 0) 0 else r.price.toDouble / r.amount.toDouble
           s""","",${r.code},52491,REDBABY,,,,,"","",,"${r.name}",${unit},1,${r.amount},${r.price},${unit},${year.substring(0, 4)}-${year.substring(6)}-01,"","""
       }
       deleteExistPath(pathRaw)
@@ -272,7 +272,7 @@ object RawDataFormat {
           value(10),
           divide(value(10), value(9)),
           value(5),
-          value(8))
+          value(8),"")
       })
       /*
         18,"1586",10090124297,20120,JD,休闲食品,糖果/巧克力,,,"福派园","",,"福派园 花生咸牛轧糖500g 手工牛扎糖 休闲零食品喜糖果软糖奶糖 花生味500g",16.2,1,1,16.2,16.2,2016-06-01,"京东平台",
@@ -290,7 +290,7 @@ object RawDataFormat {
 
     if (dataSrc == "JDNew") {
       //新的ｊｄ数据多了一列年月，忽略即可
-      val jdRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 12)
+      val jdRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 14)
       val rawRdd = jdRaw.map(raw => {
         val value = raw.split("\t")
         new JDRaw(
@@ -306,7 +306,8 @@ object RawDataFormat {
           value(10),
           divide(value(10), value(9)),
           value(5),
-          value(8))
+          value(8),
+          value(12))
       })
       /*
         18,"1586",10090124297,20120,JD,休闲食品,糖果/巧克力,,,"福派园","",,"福派园 花生咸牛轧糖500g 手工牛扎糖 休闲零食品喜糖果软糖奶糖 花生味500g",16.2,1,1,16.2,16.2,2016-06-01,"京东平台",
@@ -314,11 +315,13 @@ object RawDataFormat {
       val categoryLevel2Map = sc.broadcast(sc.textFile("hdfs://10.250.33.107:9000/CONF_DATA/JDMODEL_CONFIG.TXT").map(_.split(",")).map(i => (i(0), i(1))).collectAsMap()).value
 
       val result = rawRdd.map(x => {
-        if (x.attribute == "京东平台")
-          storeCode = "20123"
-        else if (x.attribute == "京东自营")
-          storeCode = "20122"
-        x.province + "," + "\"" + x.city + "\"" + "," + x.productId + "," + storeCode + "," + categoryLevel2Map.getOrElse(x.cateLv2, "") + "," + x.cateLv2 + "," + x.cateLv3 + "," + "" + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.produtDesc + "\"" + "," + x.salesPrice + "," + 1 + "," + x.salesAmt + "," + x.totalAmt + "," + x.actBuyPrice + "," + x.date + "-01" + "," + "\"" + x.attribute + "\"" + "," + ""
+        storeCode = (x.attribute, x.global) match {
+          case ("京东平台", "非全球购") => "20127"
+          case ("京东平台", "全球购") => "20125"
+          case ("京东自营", "非全球购") => "20126"
+          case ("京东自营", "全球购") => "20124"
+        }
+        "" + "," + "\"" + x.city + "\"" + "," + x.productId + "," + storeCode + "," + categoryLevel2Map.getOrElse(x.cateLv2, "") + "," + x.cateLv2 + "," + x.cateLv3 + "," + "" + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.produtDesc + "\"" + "," + x.salesPrice + "," + 1 + "," + x.salesAmt + "," + x.totalAmt + "," + x.actBuyPrice + "," + x.date + "-01" + "," + "\"" + x.attribute + "\"" + "," + ""
       })
       deleteExistPath(pathRaw)
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
