@@ -12,8 +12,8 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 object JDSplit {
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf()
-    conf.setAppName("asdf")
-    conf.setMaster("local")
+    //conf.setAppName("asdf")
+    //conf.setMaster("local")
     val sc = new SparkContext(conf)
 
     //添加批次的改动
