@@ -365,35 +365,49 @@ object totalcoding_1 {
 
     val packsize_conf = itemmaster_packsize(catCode, configFileNew)
     if (packsizeFlg) {
-      val packsize = packsize_conf.map(y =>
-        (if (!codingFunc.PacksizeCoding(item.description, y, List()).isEmpty) {
-          codingFunc.PacksizeCoding(item.description, y, List()).max.toString() //两个相同单位取了最大的
+      def packsize(str:String):String={
+        val pack= packsize_conf.map{y =>
+          val r=codingFunc.PacksizeCoding(str, y, List())
+          val p = if (!r.isEmpty) {
+            r.max.toString() //两个相同单位取了最大的
+          } else {
+            ""
+          }
+          (p,y)
+        }.filter(i=>i._1 != "" && i._1 != "0.0").map(x => codingFunc.packsizetransform(x))
+          .distinct.sortBy(_._1.toDouble).reverse.map(x => x._1 + x._2)
+        if (!pack.isEmpty) {
+           pack.head //所有单位之间区最大的
         } else {
           ""
-        }, y)).filter(_._1 != "").filter(_._1 != "0.0").map(x => codingFunc.packsizetransform(x))
-        .distinct.sortBy(_._1.toDouble).reverse.map(x => x._1 + x._2)
-      if (!packsize.isEmpty) {
-        item.packsize = packsize.head //所有单位之间区最大的
-      } else {
-        item.packsize = ""
-      }
-      if (item.packsize != "") {
-        val packsizeno = configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).distinct.head
-        val segcode = configFileNew.filter(_ (1) == catCode).filter(_ (3).toUpperCase() == "PACKSIZE").map(_ (10)).head
-        item_result = (item.ITEMID + "," + packsizeno + "," + item.packsize + "," + item.packsize + "," + item.perCode + "," + item.storeCode) :: item_result
-      } else {
-        var packsizeno = ""
-        if (!configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).isEmpty) {
-          packsizeno = configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).distinct.head
-          if (catCode == "IMF") {
-            item_result = (item.ITEMID + "," + packsizeno + "," + "0G" + "," + "0G" + "," + item.perCode + "," + item.storeCode) :: item_result
-          } else if (catCode == "DIAP") {
-            item_result = (item.ITEMID + "," + packsizeno + "," + "0P" + "," + "0P" + "," + item.perCode + "," + item.storeCode) :: item_result
-          } else {
-            item_result = (item.ITEMID + "," + packsizeno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
-          }
         }
       }
+
+      def getFinalPacksize(pack:String):String={
+        val p=if(pack.isEmpty){
+          if(catCode=="IMF")
+            "0G"
+          else if(catCode == "DIAP")
+            "0P"
+          else
+            "UNKNOWN"
+        }else{
+          pack
+        }
+        p
+      }
+
+      val brandDesc=item_raw(2) + " " + item_raw(3) + " " + item_raw(4)
+      val attr=item_raw(5)
+      val packsize1=packsize(brandDesc.toUpperCase)
+      val packsize2=packsize(attr.toUpperCase)
+
+      val packsizeno = configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).distinct.head
+      val segcode = configFileNew.filter(_ (1) == catCode).filter(_ (3).toUpperCase() == "PACKSIZE").map(_ (10)).head
+
+      val p1=getFinalPacksize(packsize1)
+      val p2=getFinalPacksize(packsize2)
+      item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
     }
 
     //pricetier coding
