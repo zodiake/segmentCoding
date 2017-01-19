@@ -20,6 +20,7 @@ object totalcoding_1 {
 
     val conf = new SparkConf()
     conf.setAppName("TotalCoding")
+    conf.setMaster("local[*]")
     val sc = new SparkContext(conf)
     var catlist = List[String]()
     if (args(0) == "ALL") {
@@ -103,7 +104,8 @@ object totalcoding_1 {
           }
         }
         deleteExistPath(args(4) + "_" + i + ".SEG")
-        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
+        //ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
+        ree.take(100).foreach(println)
         i = i + 1
       }
 
