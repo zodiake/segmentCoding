@@ -8,3 +8,4 @@ target/
 .cache-main
 .cache-tests
 .classpath
+src/main/scala/*.sc
