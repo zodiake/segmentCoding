@@ -70,17 +70,43 @@ object totalcoding_1 {
           if (args(5).contains("PACKSIZE") || args(5) == "ALL") {
             var itemIdLst = List[String]() //change for remove muti packsize result
             if (catcode == "IMF") {
-              val item_withnopack = tempre.map(_._1).filter(_.packsize == "").collect().toList
-              val item_withpack = tempre.map(_._1).filter(_.packsize != "")
-                .map(x => (item_withnopack.filter(y => item_prepare(y, x, seglist)), x.packsize.replace("G", "").toFloat))
+              val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
+              val p1Packsize2=p1None.map(item=>(item.ITEMID,item.packsize2)).toMap
+              val p2None=tempre.map(_._1).filter(_.packsize2=="").collect().toList
+              val p2Packsize2=p2None.map(item=>(item.ITEMID,item.packsize1)).toMap
+
+              val averageP1=tempre.map(_._1).filter(i=> i.packsize1!="")
+                .map(x => (p1None.filter(y => item_prepare(y, x, seglist)), if(x.packsize1.replace("G", "")=="")0 else x.packsize1.replace("G","").toFloat))
                 .filter(!_._1.isEmpty)
                 .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
                 .groupBy(_._1)
-                .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(_._2).size)
-                .map(x => (x._1 + ",1526," + x._2.toString + "G" + "," + x._2.toString + "G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13), x._1))
-              itemIdLst = item_withpack.collect().map(_._2).toList
-              ree = tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, itemIdLst)).mkString("\n")) ++ ree
-              ree = item_withpack.map(_._1) ++ ree
+                .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
+                .map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+
+              val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
+                .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace("G", "")=="")0 else x.packsize2.replace("G","").toFloat))
+                .filter(!_._1.isEmpty)
+                .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
+                .groupBy(_._1)
+                .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
+                .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "G" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+
+              val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
+              val c=(averageP1++averageP2)
+              val r=c.groupByKey.map{g=>
+                if(g._2.size==2){
+                  val p1=g._2.head.split(",")
+                  val p2=g._2.tail.head.split(",")(3)
+                  p1(3)=p2
+                  p1.mkString(",")
+                } else{
+                  g._2.head
+                }
+              }
+              val q=tempre.collect
+
+              ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
+              ree=r++ree
 
             } else if (catcode == "DIAP") {
 
