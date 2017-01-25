@@ -65,90 +65,124 @@ object totalcoding_1 {
           val seglist = configFile.filter(x => x(3) != "BRAND" && !x(3).contains("SUBBRAND") && x(3) != "PACKSIZE" && x(3) != "PRICETIER" && x(3) != "CATEGORY")
             .map(_ (3)).distinct
           val subbrand_namelist = configFile.filter(_ (3).contains("SUBBRAND")).map(_ (3)).distinct
-          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, args(5), KRAFile, cateCodeCombine, segNoCombine))
+          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, args(5), KRAFile, cateCodeCombine, segNoCombine,args(7)))
 
           if (args(5).contains("PACKSIZE") || args(5) == "ALL") {
-            var itemIdLst = List[String]() //change for remove muti packsize result
-            if (catcode == "IMF") {
-              val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
-              val p1Packsize2=p1None.map(item=>(item.ITEMID,item.packsize2)).toMap
-              val p2None=tempre.map(_._1).filter(_.packsize2=="").collect().toList
-              val p2Packsize2=p2None.map(item=>(item.ITEMID,item.packsize1)).toMap
+            if(args(7)=="tmtb"){
+              var itemIdLst = List[String]() //change for remove muti packsize result
+              if (catcode == "IMF") {
+                val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
+                val p1Packsize2=p1None.map(item=>(item.ITEMID,item.packsize2)).toMap
+                val p2None=tempre.map(_._1).filter(_.packsize2=="").collect().toList
+                val p2Packsize2=p2None.map(item=>(item.ITEMID,item.packsize1)).toMap
 
-              val averageP1=tempre.map(_._1).filter(i=> i.packsize1!="")
-                .map(x => (p1None.filter(y => item_prepare(y, x, seglist)), if(x.packsize1.replace("G", "")=="")0 else x.packsize1.replace("G","").toFloat))
-                .filter(!_._1.isEmpty)
-                .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                .groupBy(_._1)
-                .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                .map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+                val averageP1=tempre.map(_._1).filter(i=> i.packsize1!="")
+                  .map(x => (p1None.filter(y => item_prepare(y, x, seglist)), if(x.packsize1.replace("G", "")=="")0 else x.packsize1.replace("G","").toFloat))
+                  .filter(!_._1.isEmpty)
+                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
+                  .groupBy(_._1)
+                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
+                  .map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
 
-              val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
-                .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace("G", "")=="")0 else x.packsize2.replace("G","").toFloat))
-                .filter(!_._1.isEmpty)
-                .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                .groupBy(_._1)
-                .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "G" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
-              val c=(averageP1++averageP2)
-              val r=c.groupByKey.map{g=>
-                if(g._2.size==2){
-                  val p1=g._2.head.split(",")
-                  val p2=g._2.tail.head.split(",")(3)
-                  p1(3)=p2
-                  p1.mkString(",")
-                } else{
-                  g._2.head
+                val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
+                  .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace("G", "")=="")0 else x.packsize2.replace("G","").toFloat))
+                  .filter(!_._1.isEmpty)
+                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
+                  .groupBy(_._1)
+                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
+                  .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "G" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+                val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
+                val c=(averageP1++averageP2)
+                val r=c.groupByKey.map{g=>
+                  if(g._2.size==2){
+                    val p1=g._2.head.split(",")
+                    val p2=g._2.tail.head.split(",")(3)
+                    p1(3)=p2
+                    p1.mkString(",")
+                  } else{
+                    g._2.head
+                  }
                 }
-              }
-              val q=tempre.collect
+                val q=tempre.collect
 
-              ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
-              ree=r++ree
+                ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
+                ree=r++ree
 
-            } else if (catcode == "DIAP") {
+              } else if (catcode == "DIAP") {
 
-              val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
-              val p1Packsize2=p1None.map(item=>(item.ITEMID,item.packsize2)).toMap
-              val p2None=tempre.map(_._1).filter(_.packsize2=="").collect().toList
-              val p2Packsize2=p2None.map(item=>(item.ITEMID,item.packsize1)).toMap
+                val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
+                val p1Packsize2=p1None.map(item=>(item.ITEMID,item.packsize2)).toMap
+                val p2None=tempre.map(_._1).filter(_.packsize2=="").collect().toList
+                val p2Packsize2=p2None.map(item=>(item.ITEMID,item.packsize1)).toMap
 
-              val averageP1=tempre.map(_._1).filter(i=> i.packsize1!="")
-                .map(x => (p1None.filter(y => item_prepare(y, x, seglist)), if(x.packsize1.replace("P", "")=="")0 else x.packsize1.replace("P","").toFloat))
-                .filter(!_._1.isEmpty)
-                .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                .groupBy(_._1)
-                .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                .map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "P" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+                val averageP1=tempre.map(_._1).filter(i=> i.packsize1!="")
+                  .map(x => (p1None.filter(y => item_prepare(y, x, seglist)), if(x.packsize1.replace("P", "")=="")0 else x.packsize1.replace("P","").toFloat))
+                  .filter(!_._1.isEmpty)
+                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
+                  .groupBy(_._1)
+                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
+                  .map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "P" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
 
-              val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
-                .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace("P", "")=="")0 else x.packsize2.replace("P","").toFloat))
-                .filter(!_._1.isEmpty)
-                .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                .groupBy(_._1)
-                .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "P" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+                val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
+                  .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace("P", "")=="")0 else x.packsize2.replace("P","").toFloat))
+                  .filter(!_._1.isEmpty)
+                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
+                  .groupBy(_._1)
+                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
+                  .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "P" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
 
-              val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
-              val c=(averageP1++averageP2)
-              val r=c.groupByKey.map{g=>
-                if(g._2.size==2){
-                  val p1=g._2.head.split(",")
-                  val p2=g._2.tail.head.split(",")(3)
-                  p1(3)=p2
-                  p1.mkString(",")
-                } else{
-                  g._2.head
+                val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
+                val c=(averageP1++averageP2)
+                val r=c.groupByKey.map{g=>
+                  if(g._2.size==2){
+                    val p1=g._2.head.split(",")
+                    val p2=g._2.tail.head.split(",")(3)
+                    p1(3)=p2
+                    p1.mkString(",")
+                  } else{
+                    g._2.head
+                  }
                 }
+                val q=tempre.collect
+
+                ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
+                ree=r++ree
+
+              } else {
+                ree = tempre.map(_._2.mkString("\n")) ++ ree
               }
-              val q=tempre.collect
+            }else{
+              var itemIdLst = List[String]()  //change for remove muti packsize result
+              if(catcode == "IMF"){
+                val item_withnopack = tempre.map(_._1).filter(_.packsize == "").collect().toList
+                val item_withpack = tempre.map(_._1).filter(_.packsize != "")
+                  .map(x => (item_withnopack.filter(y => item_prepare(y, x, seglist)), x.packsize.replace("G", "").toFloat))
+                  .filter(!_._1.isEmpty )
+                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
+                  .groupBy(_._1)
+                  .map(x => x._1 -> x._2.map(_._2).sum/x._2.map(_._2).size)
+                  .map(x => (x._1 + ",1526," + x._2.toString + "G"+","+ x._2.toString + "G"+","+x._1.substring(0, 8)+","+x._1.substring(8, 13),x._1))
+                itemIdLst = item_withpack.collect().map(_._2).toList
+                ree = tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y,itemIdLst)).mkString("\n")) ++ ree
+                ree = item_withpack.map(_._1) ++ ree
 
-              ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
-              ree=r++ree
+              }else if(catcode == "DIAP"){
 
-            } else {
-              ree = tempre.map(_._2.mkString("\n")) ++ ree
+                val item_withnopack = tempre.map(_._1).filter(_.packsize == "").collect().toList
+                val item_withpack = tempre.map(_._1).filter(_.packsize != "")
+                  .map(x => (item_withnopack.filter(y => item_prepare(y, x, seglist)), x.packsize.replace("P", "").toFloat))
+                  .filter(!_._1.isEmpty )
+                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
+                  .groupBy(_._1)
+                  .map(x => x._1 -> x._2.map(_._2).sum/x._2.map(_._2).size)
+                  .map(x => (x._1 + ",1526," + x._2.toString + "P"+","+ x._2.toString + "P"+","+x._1.substring(0, 8)+","+x._1.substring(8, 13),x._1))
+                itemIdLst = item_withpack.collect().map(_._2).toList
+                ree = tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y,itemIdLst)).mkString("\n"))  ++ ree
+                ree = item_withpack.map(_._1) ++ ree
+
+              }else{
+                ree = tempre.map(_._2.mkString("\n")) ++ ree
+              }
             }
           } else {
             ree = tempre.map(_._2.mkString("\n")) ++ ree
@@ -335,7 +369,7 @@ val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
   }
 
 
-  def coding(item_raw: Array[String], configFile: List[Array[String]], seglist: List[String], subbrand_namelist: List[String], codingType: String, krafile: List[Array[String]], cateCodeCombine: String, segCombine: String): (item, List[String]) = {
+  def coding(item_raw: Array[String], configFile: List[Array[String]], seglist: List[String], subbrand_namelist: List[String], codingType: String, krafile: List[Array[String]], cateCodeCombine: String, segCombine: String,t:String): (item, List[String]) = {
 
     var brandFlg = false
     var packsizeFlg = false
@@ -418,51 +452,85 @@ val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
 
     val packsize_conf = itemmaster_packsize(catCode, configFileNew)
     if (packsizeFlg) {
-      def packsize(str:String):String={
-        val pack= packsize_conf.map{y =>
-          val r=codingFunc.PacksizeCoding(str, y, List())
-          val p = if (!r.isEmpty) {
-            r.max.toString() //两个相同单位取了最大的
+      if(t=="tmtb"){
+        def packsize(str:String):String={
+          val pack= packsize_conf.map{y =>
+            val r=codingFunc.PacksizeCoding(str, y, List())
+            val p = if (!r.isEmpty) {
+              r.max.toString() //两个相同单位取了最大的
+            } else {
+              ""
+            }
+            (p,y)
+          }.filter(i=>i._1 != "" && i._1 != "0.0").map(x => codingFunc.packsizetransform(x))
+            .distinct.sortBy(_._1.toDouble).reverse.map(x => x._1 + x._2)
+          if (!pack.isEmpty) {
+            pack.head //所有单位之间区最大的
           } else {
             ""
           }
-          (p,y)
-        }.filter(i=>i._1 != "" && i._1 != "0.0").map(x => codingFunc.packsizetransform(x))
+        }
+
+        def getFinalPacksize(pack:String):String={
+          val p=if(pack.isEmpty){
+            if(catCode=="IMF")
+              "0G"
+            else if(catCode == "DIAP")
+              "0P"
+            else
+              "UNKNOWN"
+          }else{
+            pack
+          }
+          p
+        }
+
+        if(!configFileNew.filter(_(3) == "PACKSIZE").map(_(2)).isEmpty){
+          val brandDesc=item_raw(2) + " " + item_raw(3) + " " + item_raw(4)
+          val attr=item_raw(5)
+          val packsize1=packsize(brandDesc.toUpperCase)
+          val packsize2=packsize(attr.toUpperCase)
+
+          val packsizeno = "1526"
+
+          val p1=getFinalPacksize(packsize1)
+          val p2=getFinalPacksize(packsize2)
+          item.packsize1=packsize1
+          item.packsize2=packsize2
+          item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
+        }
+      }else{
+        val packsize = packsize_conf.map(y => {
+          val list = codingFunc.PacksizeCoding(item.description, y, List())
+          (if (!list.isEmpty) {
+            list.max.toString() //两个相同单位取了最大的
+          } else {
+            ""
+          }, y)
+        }).filter(_._1 != "").filter(_._1 != "0.0").map(x => codingFunc.packsizetransform(x))
           .distinct.sortBy(_._1.toDouble).reverse.map(x => x._1 + x._2)
-        if (!pack.isEmpty) {
-           pack.head //所有单位之间区最大的
+        if (!packsize.isEmpty) {
+          item.packsize = packsize.head //所有单位之间区最大的
         } else {
-          ""
+          item.packsize = ""
         }
-      }
-
-      def getFinalPacksize(pack:String):String={
-        val p=if(pack.isEmpty){
-          if(catCode=="IMF")
-            "0G"
-          else if(catCode == "DIAP")
-            "0P"
-          else
-            "UNKNOWN"
-        }else{
-          pack
+        if (item.packsize != "") {
+          val packsizeno = configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).distinct.head
+          val segcode = configFileNew.filter(_ (1) == catCode).filter(_ (3).toUpperCase() == "PACKSIZE").map(_ (10)).head
+          item_result = (item.ITEMID + "," + packsizeno + "," + item.packsize + "," + item.packsize + "," + item.perCode + "," + item.storeCode) :: item_result
+        } else {
+          var packsizeno = ""
+          if (!configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).isEmpty) {
+            packsizeno = configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).distinct.head
+            if (catCode == "IMF") {
+              item_result = (item.ITEMID + "," + packsizeno + "," + "0G" + "," + "0G" + "," + item.perCode + "," + item.storeCode) :: item_result
+            } else if (catCode == "DIAP") {
+              item_result = (item.ITEMID + "," + packsizeno + "," + "0P" + "," + "0P" + "," + item.perCode + "," + item.storeCode) :: item_result
+            } else {
+              item_result = (item.ITEMID + "," + packsizeno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
+            }
+          }
         }
-        p
-      }
-
-      if(!configFileNew.filter(_(3) == "PACKSIZE").map(_(2)).isEmpty){
-        val brandDesc=item_raw(2) + " " + item_raw(3) + " " + item_raw(4)
-        val attr=item_raw(5)
-        val packsize1=packsize(brandDesc.toUpperCase)
-        val packsize2=packsize(attr.toUpperCase)
-
-        val packsizeno = "1526"
-
-        val p1=getFinalPacksize(packsize1)
-        val p2=getFinalPacksize(packsize2)
-        item.packsize1=packsize1
-        item.packsize2=packsize2
-        item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
       }
     }
 
