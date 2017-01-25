@@ -90,8 +90,7 @@ object totalcoding_1 {
                 .groupBy(_._1)
                 .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
                 .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "G" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-
-              val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
+val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
               val c=(averageP1++averageP2)
               val r=c.groupByKey.map{g=>
                 if(g._2.size==2){
@@ -451,19 +450,20 @@ object totalcoding_1 {
         p
       }
 
-      val brandDesc=item_raw(2) + " " + item_raw(3) + " " + item_raw(4)
-      val attr=item_raw(5)
-      val packsize1=packsize(brandDesc.toUpperCase)
-      val packsize2=packsize(attr.toUpperCase)
+      if(!configFileNew.filter(_(3) == "PACKSIZE").map(_(2)).isEmpty){
+        val brandDesc=item_raw(2) + " " + item_raw(3) + " " + item_raw(4)
+        val attr=item_raw(5)
+        val packsize1=packsize(brandDesc.toUpperCase)
+        val packsize2=packsize(attr.toUpperCase)
 
-      val packsizeno = configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).distinct.head
-      val segcode = configFileNew.filter(_ (1) == catCode).filter(_ (3).toUpperCase() == "PACKSIZE").map(_ (10)).head
+        val packsizeno = "1526"
 
-      val p1=getFinalPacksize(packsize1)
-      val p2=getFinalPacksize(packsize2)
-      item.packsize1=packsize1
-      item.packsize2=packsize2
-      item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
+        val p1=getFinalPacksize(packsize1)
+        val p2=getFinalPacksize(packsize2)
+        item.packsize1=packsize1
+        item.packsize2=packsize2
+        item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
+      }
     }
 
     //pricetier coding
