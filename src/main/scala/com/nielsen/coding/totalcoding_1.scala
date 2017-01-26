@@ -71,6 +71,7 @@ object totalcoding_1 {
             if(args(7)=="tmtb"){
               var itemIdLst = List[String]() //change for remove muti packsize result
               if (catcode == "IMF") {
+
                 val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
                 val p1Packsize2=p1None.map(item=>(item.ITEMID,item.packsize2)).toMap
                 val p2None=tempre.map(_._1).filter(_.packsize2=="").collect().toList
@@ -91,7 +92,8 @@ object totalcoding_1 {
                   .groupBy(_._1)
                   .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
                   .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "G" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-                val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
+
+                val idList=(averageP1.map(_._1) ++ averageP1.map(_._1)).collect().toList
                 val c=(averageP1++averageP2)
                 val r=c.groupByKey.map{g=>
                   if(g._2.size==2){
@@ -107,7 +109,6 @@ object totalcoding_1 {
 
                 ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
                 ree=r++ree
-
               } else if (catcode == "DIAP") {
 
                 val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
@@ -189,8 +190,8 @@ object totalcoding_1 {
           }
         }
         deleteExistPath(args(4) + "_" + i + ".SEG")
-        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
-        //ree.take(100).foreach(println)
+        //ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
+        ree.take(100).foreach(println)
         i = i + 1
       }
 
