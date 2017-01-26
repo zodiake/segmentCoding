@@ -132,7 +132,7 @@ object totalcoding_1 {
                   .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
                   .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "P" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
 
-                val idList=p1None.map(_.ITEMID) ++ p2None.map(_.ITEMID)
+                val idList=(averageP1.map(_._1) ++ averageP1.map(_._1)).collect().toList
                 val c=(averageP1++averageP2)
                 val r=c.groupByKey.map{g=>
                   if(g._2.size==2){
