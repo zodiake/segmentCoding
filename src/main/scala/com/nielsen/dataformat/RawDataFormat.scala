@@ -324,7 +324,7 @@ object RawDataFormat {
         "" + "," + "\"" + x.city + "\"" + "," + x.productId + "," + storeCode + "," + categoryLevel2Map.getOrElse(x.cateLv2, "") + "," + x.cateLv2 + "," + x.cateLv3 + "," + "" + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.produtDesc + "\"" + "," + x.salesPrice + "," + 1 + "," + x.salesAmt + "," + x.totalAmt + "," + x.actBuyPrice + "," + x.date + "-01" + "," + "\"" + x.attribute + "\"" + "," + ""
       })
       deleteExistPath(pathRaw)
-      result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      result.saveAsTextFile(pathRaw.concat(".FORMAT"))
     }
 
     if (dataSrc == "FEINIU") {
