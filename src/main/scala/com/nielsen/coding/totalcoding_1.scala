@@ -19,8 +19,8 @@ object totalcoding_1 {
     }
 
     val conf = new SparkConf()
-    conf.setAppName("TotalCoding")
-    conf.setMaster("local[*]")
+    //conf.setAppName("TotalCoding")
+    //conf.setMaster("local[*]")
     val sc = new SparkContext(conf)
     var catlist = List[String]()
     if (args(0) == "ALL") {
@@ -486,6 +486,8 @@ object totalcoding_1 {
           p
         }
 
+        item.packsize1=""
+        item.packsize2=""
         if(!configFileNew.filter(_(3) == "PACKSIZE").map(_(2)).isEmpty){
           val brandDesc=item_raw(2) + " " + item_raw(3) + " " + item_raw(4)
           val attr=item_raw(5)
@@ -580,16 +582,33 @@ object totalcoding_1 {
       //bunded seg coding
       for (seg <- finalSeglst) {
         if (catCode == "FB" && seg == "CAPACITY") {
-          val capacity_conf = configFileNew.filter(x => x(3) == "CAPACITY" && x(1) == "FB")
-          val capacityno = capacity_conf.head(2)
-          val capacity_result = capacity_conf.filter(x => codingFunc.checkprice(item.packsize.replace("ML", ""), x(5)))
-          if (capacity_result.isEmpty || capacity_result.size > 1) {
-            item_result = (item.ITEMID + "," + capacityno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
-          } else {
-            val capacityno = capacity_result.head(2)
-            item.capacity = capacity_result.head(0)
-            val segcode = configFileNew.filter(_ (0) == item.capacity).map(_ (10)).head
-            item_result = (item.ITEMID + "," + capacityno + "," + item.capacity + "," + segcode + "," + item.perCode + "," + item.storeCode) :: item_result
+          if(t=="tmtb"){
+            val capacity_conf = configFileNew.filter(x => x(3) == "CAPACITY" && x(1) == "FB")
+            val capacityno = capacity_conf.head(2)
+            val p1=try{item.packsize1.replace("ML","").toFloat}catch{case e:NumberFormatException=>0}
+            val p2=try{item.packsize2.replace("ML","").toFloat}catch{case e:NumberFormatException=>0}
+            val p=Math.max(p1,p2)
+            val capacity_result = capacity_conf.filter(x => codingFunc.checkprice(p.toString, x(5)))
+            if (capacity_result.isEmpty || capacity_result.size > 1) {
+              item_result = (item.ITEMID + "," + capacityno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
+            } else {
+              val capacityno = capacity_result.head(2)
+              item.capacity = capacity_result.head(0)
+              val segcode = configFileNew.filter(_ (0) == item.capacity).map(_ (10)).head
+              item_result = (item.ITEMID + "," + capacityno + "," + item.capacity + "," + segcode + "," + item.perCode + "," + item.storeCode) :: item_result
+            }
+          }else{
+            val capacity_conf = configFileNew.filter(x => x(3) == "CAPACITY" && x(1) == "FB")
+            val capacityno = capacity_conf.head(2)
+            val capacity_result = capacity_conf.filter(x => codingFunc.checkprice(item.packsize.replace("ML","").toString, x(5)))
+            if (capacity_result.isEmpty || capacity_result.size > 1) {
+              item_result = (item.ITEMID + "," + capacityno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
+            } else {
+              val capacityno = capacity_result.head(2)
+              item.capacity = capacity_result.head(0)
+              val segcode = configFileNew.filter(_ (0) == item.capacity).map(_ (10)).head
+              item_result = (item.ITEMID + "," + capacityno + "," + item.capacity + "," + segcode + "," + item.perCode + "," + item.storeCode) :: item_result
+            }
           }
 
         } else if ((catCode.contains("_BUNDLE") || catCode.contains("BANDEDPACK_")) && seg == "SUBCATEGORY") {
