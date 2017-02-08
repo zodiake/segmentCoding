@@ -34,7 +34,7 @@ object CateCoFilter {
       var brandType = x._2._1._2
       var desc = x._2._1._3
       var salesValue = x._2._2.get.toDouble
-      var t = "tsi"
+      var t = "T100"
       val store = itemid.substring(8, 13)
       val period = itemid.substring(0, 8)
       (cateCode, (salesValue, (cateCode, itemid, brandType, desc, t, store, period)))
