@@ -19,8 +19,8 @@ object totalcoding_1 {
     }
 
     val conf = new SparkConf()
-    //conf.setAppName("TotalCoding")
-    //conf.setMaster("local[*]")
+    conf.setAppName("TotalCoding")
+    conf.setMaster("local[*]")
     val sc = new SparkContext(conf)
     var catlist = List[String]()
     if (args(0) == "ALL") {
