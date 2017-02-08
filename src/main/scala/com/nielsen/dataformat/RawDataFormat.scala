@@ -300,7 +300,7 @@ object RawDataFormat {
           value(2),
           value(3),
           value(4),
-          value(1).replace(",", " "),
+          value(1).replaceAll(",", " ").replaceAll("\"",""),
           divide(value(10), value(9)),
           value(9),
           value(10),
