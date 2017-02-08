@@ -21,7 +21,11 @@ object CateCoFilter {
     val num = args(3).toInt
     val cateCoLstTmp = sc.textFile(args(2)).map { x => x.split(",")(1) }.distinct().collect().toList
     val cateCoLst = "NC" :: cateCoLstTmp
-    val cateCodingText = sc.textFile(args(0)).map(_.split(",")).filter(x => cateCoLst.contains(x(0))).filter(_ (1).substring(8, 13) != "10010").map { cate => (cate(1), (cate(0), cate(2), cate(4))) }
+    val jd: Array[String] => Boolean = i => i(1).substring(8, 13) == "20125" || i(1).substring(8, 13) == "20127"
+    val other: Array[String] => Boolean = i => i(1).substring(8, 13) != "10010"
+    val filtered = if (args(4) == "JDFULL") jd else other
+    val cateCodingText = sc.textFile(args(0)).map(_.split(",")).filter(x => cateCoLst.contains(x(0)))
+      .filter(filtered).map { cate => (cate(1), (cate(0), cate(2), cate(4))) }
     val salesText = sc.textFile(args(1)).map(_.split(",")).map { x => (x(0), x(1)) }
     val cateCoPairRdd = new PairRDDFunctions(cateCodingText)
     val combine = cateCoPairRdd.leftOuterJoin(salesText).filter(!_._2._2.isEmpty).map { x =>
