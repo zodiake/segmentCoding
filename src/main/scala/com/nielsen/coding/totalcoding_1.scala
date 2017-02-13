@@ -19,8 +19,8 @@ object totalcoding_1 {
     }
 
     val conf = new SparkConf()
-    //conf.setAppName("TotalCoding")
-    //conf.setMaster("local[*]")
+    conf.setAppName("TotalCoding")
+    conf.setMaster("local[*]")
     val sc = new SparkContext(conf)
     var catlist = List[String]()
     if (args(0) == "ALL") {
@@ -83,7 +83,7 @@ object totalcoding_1 {
                   .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
                   .groupBy(_._1)
                   .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  .map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+                  .map(x => (x._1,x._1 + ",1526," + x._2.toString+"G" +  "," + p1Packsize2(x._1) + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
 
                 val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
                   .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace("G", "")=="")0 else x.packsize2.replace("G","").toFloat))
@@ -91,9 +91,9 @@ object totalcoding_1 {
                   .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
                   .groupBy(_._1)
                   .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "G" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+                  .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "," + x._2.toString+"G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
 
-                val idList=(averageP1.map(_._1) ++ averageP1.map(_._1)).collect().toList
+                val idList=(averageP1.map(_._1) ++ averageP2.map(_._1)).collect().toList
                 val c=(averageP1++averageP2)
                 val r=c.groupByKey.map{g=>
                   if(g._2.size==2){
@@ -132,7 +132,7 @@ object totalcoding_1 {
                   .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
                   .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "P" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
 
-                val idList=(averageP1.map(_._1) ++ averageP1.map(_._1)).collect().toList
+                val idList=(averageP1.map(_._1) ++ averageP2.map(_._1)).collect().toList
                 val c=(averageP1++averageP2)
                 val r=c.groupByKey.map{g=>
                   if(g._2.size==2){
@@ -189,9 +189,9 @@ object totalcoding_1 {
             ree = tempre.map(_._2.mkString("\n")) ++ ree
           }
         }
-        deleteExistPath(args(4) + "_" + i + ".SEG")
-        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
-        //ree.take(100).foreach(println)
+        //deleteExistPath(args(4) + "_" + i + ".SEG")
+        //ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
+        ree.take(100).foreach(println)
         i = i + 1
       }
 
