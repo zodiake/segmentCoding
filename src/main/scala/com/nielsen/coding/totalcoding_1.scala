@@ -19,8 +19,8 @@ object totalcoding_1 {
     }
 
     val conf = new SparkConf()
-    conf.setAppName("TotalCoding")
-    conf.setMaster("local[*]")
+    //conf.setAppName("TotalCoding")
+    //conf.setMaster("local[*]")
     val sc = new SparkContext(conf)
     var catlist = List[String]()
     if (args(0) == "ALL") {
@@ -69,86 +69,49 @@ object totalcoding_1 {
 
           if (args(5).contains("PACKSIZE") || args(5) == "ALL") {
             if(args(7)=="tmtb"){
-              var itemIdLst = List[String]() //change for remove muti packsize result
+              def computerAverage(unit:String): Unit = {
+                val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
+                val p1Packsize2=p1None.map(item=>(item.ITEMID,item.packsize2)).toMap
+                val p2None=tempre.map(_._1).filter(_.packsize2=="").collect().toList
+                val p2Packsize2=p2None.map(item=>(item.ITEMID,item.packsize1)).toMap
+
+                val averageP1=tempre.map(_._1).filter(i=> i.packsize1!="")
+                  .map(x => (p1None.filter(y => item_prepare(y, x, seglist)), if(x.packsize1.replace(unit, "")=="")0 else x.packsize1.replace(unit,"").toFloat))
+                  .filter(!_._1.isEmpty)
+                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
+                  .groupBy(_._1)
+                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
+                  .map(x => (x._1,s"${x._1},1526,${x._2.toString},${unit},${p1Packsize2(x._1)},${x._1.substring(0,8)},${x._1.substring(8,13)}"))
+
+                val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
+                  .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace(unit, "")=="")0 else x.packsize2.replace(unit,"").toFloat))
+                  .filter(!_._1.isEmpty)
+                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
+                  .groupBy(_._1)
+                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
+                  .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "," + x._2.toString+unit + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+
+                val idList=(averageP1.map(_._1) ++ averageP2.map(_._1)).collect().toList
+                val c=(averageP1++averageP2)
+                val r=c.groupByKey.map{g=>
+                  if(g._2.size==2){
+                    val p1=g._2.head.split(",")
+                    val p2=g._2.tail.head.split(",")(3)
+                    p1(3)=p2
+                    p1.mkString(",")
+                  } else{
+                    g._2.head
+                  }
+                }
+                val q=tempre.collect
+
+                ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
+                ree=r++ree
+              }
               if (catcode == "IMF") {
-
-                val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
-                val p1Packsize2=p1None.map(item=>(item.ITEMID,item.packsize2)).toMap
-                val p2None=tempre.map(_._1).filter(_.packsize2=="").collect().toList
-                val p2Packsize2=p2None.map(item=>(item.ITEMID,item.packsize1)).toMap
-
-                val averageP1=tempre.map(_._1).filter(i=> i.packsize1!="")
-                  .map(x => (p1None.filter(y => item_prepare(y, x, seglist)), if(x.packsize1.replace("G", "")=="")0 else x.packsize1.replace("G","").toFloat))
-                  .filter(!_._1.isEmpty)
-                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                  .groupBy(_._1)
-                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  .map(x => (x._1,x._1 + ",1526," + x._2.toString+"G" +  "," + p1Packsize2(x._1) + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-
-                val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
-                  .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace("G", "")=="")0 else x.packsize2.replace("G","").toFloat))
-                  .filter(!_._1.isEmpty)
-                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                  .groupBy(_._1)
-                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "," + x._2.toString+"G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-
-                val idList=(averageP1.map(_._1) ++ averageP2.map(_._1)).collect().toList
-                val c=(averageP1++averageP2)
-                val r=c.groupByKey.map{g=>
-                  if(g._2.size==2){
-                    val p1=g._2.head.split(",")
-                    val p2=g._2.tail.head.split(",")(3)
-                    p1(3)=p2
-                    p1.mkString(",")
-                  } else{
-                    g._2.head
-                  }
-                }
-                val q=tempre.collect
-
-                ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
-                ree=r++ree
+                computerAverage("G")
               } else if (catcode == "DIAP") {
-
-                val p1None=tempre.map(_._1).filter(_.packsize1=="").collect().toList
-                val p1Packsize2=p1None.map(item=>(item.ITEMID,item.packsize2)).toMap
-                val p2None=tempre.map(_._1).filter(_.packsize2=="").collect().toList
-                val p2Packsize2=p2None.map(item=>(item.ITEMID,item.packsize1)).toMap
-
-                val averageP1=tempre.map(_._1).filter(i=> i.packsize1!="")
-                  .map(x => (p1None.filter(y => item_prepare(y, x, seglist)), if(x.packsize1.replace("P", "")=="")0 else x.packsize1.replace("P","").toFloat))
-                  .filter(!_._1.isEmpty)
-                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                  .groupBy(_._1)
-                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  .map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "P" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-
-                val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
-                  .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace("P", "")=="")0 else x.packsize2.replace("P","").toFloat))
-                  .filter(!_._1.isEmpty)
-                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                  .groupBy(_._1)
-                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "P" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-
-                val idList=(averageP1.map(_._1) ++ averageP2.map(_._1)).collect().toList
-                val c=(averageP1++averageP2)
-                val r=c.groupByKey.map{g=>
-                  if(g._2.size==2){
-                    val p1=g._2.head.split(",")
-                    val p2=g._2.tail.head.split(",")(3)
-                    p1(3)=p2
-                    p1.mkString(",")
-                  } else{
-                    g._2.head
-                  }
-                }
-                val q=tempre.collect
-
-                ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
-                ree=r++ree
-
+                computerAverage("P")
               } else {
                 ree = tempre.map(_._2.mkString("\n")) ++ ree
               }
@@ -189,9 +152,9 @@ object totalcoding_1 {
             ree = tempre.map(_._2.mkString("\n")) ++ ree
           }
         }
-        //deleteExistPath(args(4) + "_" + i + ".SEG")
-        //ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
-        ree.take(100).foreach(println)
+        deleteExistPath(args(4) + "_" + i + ".SEG")
+        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
+        //ree.take(100).foreach(println)
         i = i + 1
       }
 
