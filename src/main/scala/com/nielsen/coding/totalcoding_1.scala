@@ -81,7 +81,8 @@ object totalcoding_1 {
                   .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
                   .groupBy(_._1)
                   .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  .map(x => (x._1,s"${x._1},1526,${x._2.toString},${unit},${p1Packsize2(x._1)},${x._1.substring(0,8)},${x._1.substring(8,13)}"))
+                  //.map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+                  .map(x => (x._1,s"${x._1},1526,${x._2.toString}${unit},${p1Packsize2(x._1)},${x._1.substring(0,8)},${x._1.substring(8,13)}"))
 
                 val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
                   .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace(unit, "")=="")0 else x.packsize2.replace(unit,"").toFloat))
@@ -89,7 +90,9 @@ object totalcoding_1 {
                   .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
                   .groupBy(_._1)
                   .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  .map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "," + x._2.toString+unit + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+                  //.map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "G" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
+                  .map(x => (x._1,s"${x._1},1526,${p2Packsize2(x._1)},${x._2.toString}${unit},${x._1.substring(0, 8)},${x._1.substring(8, 13)}"))
+
 
                 val idList=(averageP1.map(_._1) ++ averageP2.map(_._1)).collect().toList
                 val c=(averageP1++averageP2)
