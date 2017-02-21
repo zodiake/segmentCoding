@@ -201,7 +201,8 @@ object RawDataFormat {
         .filter(x => x.split("\t").length == 12)
       val rawRdd = suNingRaw.map(row => {
         val value = row.split("\t")
-        new SuNingRaw(
+
+        SuNingRaw(
           value(1), //storeid
           value(0).replace("^\\xEF\\xBB\\xBF", ""), //city
           value(2), //itemCode
@@ -211,19 +212,12 @@ object RawDataFormat {
           value(6).toDouble + value(8).toDouble, //salesvalue
           value(4).toDouble + value(7).toDouble, //salesvolume
           value(5).toDouble + value(8).toDouble,
-          value(5).toDouble //payvalue
-        )
+          storeCode //payvalue
+        ).toCsvString(year)
       })
 
-      val result = rawRdd.map(x => {
-        if (x.pay != 0.toDouble)
-          storeCode = "20270"
-        else
-          storeCode = "20271"
-        x.storeId + "," + "\"" + x.city + "\"" + "," + x.itemCode + "," + storeCode + "," + "SUNING" + "," + x.prodCate.replace(",", "") + "," + x.EAN + "," + "" + "," + "" + "," + "\"" + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.desc.replace(",", "") + "\"" + "," + x.salesValue * 10000 + "," + 1 + "," + x.salesVolumn + "," + x.payValue * 10000 + "," + x.payValue * 10000 + "," + year.substring(0, 4) + "-" + year.substring(6) + "-" + "01" + "," + "\"" + " " + "\"" + "," + ""
-      })
       deleteExistPath(pathRaw)
-      result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      rawRdd.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }
 
     if (dataSrc == "QBTBD") {
@@ -272,7 +266,7 @@ object RawDataFormat {
           value(10),
           divide(value(10), value(9)),
           value(5),
-          value(8),"")
+          value(8), "")
       })
       /*
         18,"1586",10090124297,20120,JD,休闲食品,糖果/巧克力,,,"福派园","",,"福派园 花生咸牛轧糖500g 手工牛扎糖 休闲零食品喜糖果软糖奶糖 花生味500g",16.2,1,1,16.2,16.2,2016-06-01,"京东平台",
@@ -299,7 +293,7 @@ object RawDataFormat {
           value(0).replace("^\\xEF\\xBB\\xBF", ""),
           value(2),
           value(3),
-          value(4).replace(","," "),
+          value(4).replace(",", " "),
           value(1).replace(",", " "),
           divide(value(10), value(9)),
           value(9),
