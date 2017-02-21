@@ -49,8 +49,8 @@ object RawDataFormat {
     }
 
     val conf = new SparkConf()
-    //conf.setAppName("DataFormat")
-    //conf.setMaster("local")
+    conf.setAppName("DataFormat")
+    conf.setMaster("local")
     val sc = new SparkContext(conf)
     val templist = Array[String]()
     var universe = sc.parallelize(templist)
@@ -216,8 +216,9 @@ object RawDataFormat {
         ).toCsvString(year)
       })
 
-      deleteExistPath(pathRaw)
-      rawRdd.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      //deleteExistPath(pathRaw)
+      //rawRdd.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      rawRdd.take(1).foreach(println)
     }
 
     if (dataSrc == "QBTBD") {
