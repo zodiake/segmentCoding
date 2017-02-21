@@ -162,7 +162,7 @@ object RawDataFormat {
         })
       val rawRdd = oneMallRaw.map(raw => {
         val value = raw.split(",")
-        new OneMallRaw(
+        OneMallRaw(
           value(5), //prodId
           value(10),
           value(1), //cateLvl2Nm
@@ -177,18 +177,12 @@ object RawDataFormat {
           value(13), //实际买价
           value(14), //bizType
           value(0).replace("^\\xEF\\xBB\\xBF", "") //mm
-        )
+        ).toCsvString()
       })
 
-      val result = rawRdd.map(x => {
-        if (x.bizType == "商城")
-          storeCode = "21008"
-        else if (x.bizType == "商城海购")
-          storeCode = "90278"
-        "" + "," + "\"" + x.location + "\"" + "," + x.prodId + "," + storeCode + "," + "1mall" + "," + x.cateLvl2Nm + "," + x.cateLvl3Nm + "," + x.cateLvl4Nm + "," + x.cateLvLeaf + "," + "\"" + x.brand.replace(",", " ") + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.prodNm.replace(",", " ") + "\"" + "," + x.soldPrice + "," + 1 + "," + x.soldNum + "," + x.soldAmount + "," + x.soldActAmount + "," + x.date + "-01" + "," + "\"" + x.bizType.replace(",", " ") + "\"" + "," + ""
-      })
       deleteExistPath(pathRaw)
-      result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      rawRdd.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      //rawRdd.take(1).foreach(println)
     }
     if (dataSrc == "SUNING") {
       val suNingRaw = sc.textFile(pathRaw)
@@ -201,7 +195,6 @@ object RawDataFormat {
         .filter(x => x.split("\t").length == 12)
       val rawRdd = suNingRaw.map(row => {
         val value = row.split("\t")
-
         SuNingRaw(
           value(1), //storeid
           value(0).replace("^\\xEF\\xBB\\xBF", ""), //city
@@ -216,9 +209,9 @@ object RawDataFormat {
         ).toCsvString(year)
       })
 
-      //deleteExistPath(pathRaw)
-      //rawRdd.saveAsTextFile(pathRaw.concat(".REFORMAT"))
-      rawRdd.take(1).foreach(println)
+      deleteExistPath(pathRaw)
+      rawRdd.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      //rawRdd.take(1).foreach(println)
     }
 
     if (dataSrc == "QBTBD") {
@@ -286,9 +279,10 @@ object RawDataFormat {
     if (dataSrc == "JDNew") {
       //新的ｊｄ数据多了一列年月，忽略即可
       val jdRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 14)
+      val categoryLevel2Map = sc.broadcast(sc.textFile("hdfs://10.250.33.107:9000/CONF_DATA/JDMODEL_CONFIG.TXT").map(_.split(",")).map(i => (i(0), i(1))).collectAsMap()).value
       val rawRdd = jdRaw.map(raw => {
         val value = raw.split("\t")
-        new JDRaw(
+        JDRaw(
           value(6),
           value(7),
           value(0).replace("^\\xEF\\xBB\\xBF", ""),
@@ -302,24 +296,13 @@ object RawDataFormat {
           divide(value(10), value(9)),
           value(5),
           value(8),
-          value(12))
+          value(12)).toCsvString(categoryLevel2Map)
       })
-      /*
-        18,"1586",10090124297,20120,JD,休闲食品,糖果/巧克力,,,"福派园","",,"福派园 花生咸牛轧糖500g 手工牛扎糖 休闲零食品喜糖果软糖奶糖 花生味500g",16.2,1,1,16.2,16.2,2016-06-01,"京东平台",
-       */
-      val categoryLevel2Map = sc.broadcast(sc.textFile("hdfs://10.250.33.107:9000/CONF_DATA/JDMODEL_CONFIG.TXT").map(_.split(",")).map(i => (i(0), i(1))).collectAsMap()).value
 
-      val result = rawRdd.map(x => {
-        storeCode = (x.attribute, x.global) match {
-          case ("京东平台", "非全球购") => "20127"
-          case ("京东平台", "全球购") => "20125"
-          case ("京东自营", "非全球购") => "20126"
-          case ("京东自营", "全球购") => "20124"
-        }
-        "" + "," + "\"" + x.city + "\"" + "," + x.productId + "," + storeCode + "," + categoryLevel2Map.getOrElse(x.cateLv2, "") + "," + x.cateLv2 + "," + x.cateLv3 + "," + "" + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + x.produtDesc + "\"" + "," + x.salesPrice + "," + 1 + "," + x.salesAmt + "," + x.totalAmt + "," + x.actBuyPrice + "," + x.date + "-01" + "," + "\"" + x.attribute + "\"" + "," + ""
-      })
       deleteExistPath(pathRaw)
-      result.saveAsTextFile(pathRaw.concat(".FORMAT"))
+      rawRdd.saveAsTextFile(pathRaw.concat(".FORMAT"))
+      //rawRdd.take(1).foreach(println)
+
     }
 
     if (dataSrc == "FEINIU") {
