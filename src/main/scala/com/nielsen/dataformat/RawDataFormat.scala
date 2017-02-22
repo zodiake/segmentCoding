@@ -49,8 +49,8 @@ object RawDataFormat {
     }
 
     val conf = new SparkConf()
-    conf.setAppName("DataFormat")
-    conf.setMaster("local")
+    //conf.setAppName("DataFormat")
+    //conf.setMaster("local")
     val sc = new SparkContext(conf)
     val templist = Array[String]()
     var universe = sc.parallelize(templist)
@@ -302,40 +302,32 @@ object RawDataFormat {
       deleteExistPath(pathRaw)
       rawRdd.saveAsTextFile(pathRaw.concat(".FORMAT"))
       //rawRdd.take(1).foreach(println)
-
     }
 
     if (dataSrc == "FEINIU") {
-      val feiNiuRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 12)
-      val rawRdd = feiNiuRaw.map(raw => {
-        val value = raw.split("\t")
-        new FeiNiuRaw(
-          value(1),
-          value(7),
-          value(2),
-          value(3),
-          value(4),
-          value(6),
-          value(8).replace(",", " "),
-          divide(value(10), value(9)),
-          value(9),
-          value(10),
-          divide(value(10), value(9)),
-          value(5),
-          formatDate(value(0)),
-          value(11))
-      })
-      val result = rawRdd.map(x => {
-        if (x.source == "自营")
-          storeCode = "20510"
-        else if (x.source == "商城")
-          storeCode = "20511"
-        else if (x.source == "环球购")
-          storeCode = "20512"
-        "" + "," + "\"" + x.city + "\"" + "," + x.prodId + "," + storeCode + "," + "FEINIU" + "," + x.cateLv2 + "," + x.cateLv3 + "," + x.cateLv4 + "," + "" + "," + "\"" + x.brand + "\"" + "," + "\"" + "" + "\"" + "," + "" + "," + "\"" + x.prodDesc + "\"" + "," + x.salesPrice + "," + "1" + "," + x.salesAmount + "," + x.totalAmt.trim() + "," + x.actBuyPrice + "," + x.date + "," + "\"" + x.source + "\"" + "," + x.attribute.trim()
-      })
+      val feiNiuRaw = sc.textFile(pathRaw)
+        .filter(x => x.split("\t").length == 12)
+        .map(raw => {
+          val value = raw.split("\t")
+          FeiNiuRaw(
+            value(1),
+            value(7),
+            value(2),
+            value(3),
+            value(4),
+            value(6),
+            value(8).replace(",", " "),
+            divide(value(10), value(9)),
+            value(9),
+            value(10),
+            divide(value(10), value(9)),
+            value(5),
+            formatDate(value(0)),
+            value(11)).toCsvString()
+        })
       deleteExistPath(pathRaw)
-      result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      feiNiuRaw.saveAsTextFile(pathRaw.concat(".REFORMAT"))
+      //feiNiuRaw.take(1).foreach(println)
     }
     //.filter { x => x(9).length()>9 && x(9).head.isDigit }
     if (dataSrc == "TMTB") {
