@@ -70,13 +70,6 @@ object RawDataFormat {
       storeCode = storeCodeArr.apply(0)
     }
 
-    /*
-    "" + "," + "\"" + x.location + "\"" + "," + x.prodId + "," + storeCode + "," + "1mall" + "," + x.cateLvl2Nm + "," + x.cateLvl3Nm + ","
-    + x.cateLvl4Nm + "," + x.cateLvLeaf + "," + "\"" + x.brand.replace(",", " ") + "\"" + "," + "\"" + "\"" + "," +
-      "" + "," + "\"" + x.prodNm.replace(",", " ") + "\"" + "," + x.soldPrice + ","
-    + 1 + "," + x.soldNum + "," + x.soldAmount + "," + x.soldActAmount + "," + x.date + "-01" + "," + "\"" + x.bizType.replace(",", " ") + "\"" + "," + ""
-    */
-
     if (dataSrc == "RedBaby") {
       val data = sc.textFile(pathRaw).map(_.split("\t")).filter(i => i.length >= 4).map {
         i =>
