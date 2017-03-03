@@ -106,7 +106,6 @@ object totalcoding_1 {
                     g._2.head
                   }
                 }
-                //val q=tempre.collect
 
                 ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
                 ree=r++ree
