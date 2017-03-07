@@ -295,7 +295,7 @@ object CateCoFilter {
     val other: Array[String] => Boolean = i => i(1).substring(8, 13) != "10010"
     val filtered = if (args(4) == "JDFULL") jd else other
     val cateCodingText = sc.textFile(args(0)).map(_.split(",")).cache()
-    val bigAmount=cateCodingText.filter(i => list.indexOf(i(0)) > 0 && i(6).toDouble > 5000)
+    //val bigAmount=cateCodingText.filter(i => list.indexOf(i(0)) > 0 && i(6).toDouble > 5000 && i().toDouble >= )
     val categoryCodedFile = cateCodingText.filter(x => cateCoLst.contains(x(0)))
       .filter(filtered).map { cate => (cate(1), (cate(0), cate(2), cate(4))) }
     val salesText = sc.textFile(args(1)).map(_.split(",")).map { x => (x(0), x(1)) }
@@ -317,7 +317,7 @@ object CateCoFilter {
     codingUtil.deleteExistPath(args(0).concat("_FILTER_").concat(num.toString()))
     val rdd = sc.parallelize(combinePairRdd)
     rdd.saveAsTextFile(args(0).concat("_FILTER_").concat(num.toString()))
-    codingUtil.deleteExistPath(args(0).concat("_HUGE_").concat(num.toString()))
-    bigAmount.saveAsTextFile(args(0).concat("_HUGE_").concat(num.toString()))
+    //codingUtil.deleteExistPath(args(0).concat("_HUGE_").concat(num.toString()))
+    //bigAmount.saveAsTextFile(args(0).concat("_HUGE_").concat(num.toString()))
   }
 }
