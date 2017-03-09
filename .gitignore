@@ -9,3 +9,4 @@ target/
 .cache-tests
 .classpath
 src/main/scala/*.sc
+/src/main/scala/com/nielsen/sheet1.sc
