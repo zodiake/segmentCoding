@@ -20,6 +20,6 @@ object JDstatics {
       .groupByKey()
       .map { i => (i._1, i._2.size, i._2.sum) }
       .map(i => (i._1, i._2, f"${i._3}%.2f"))
-    result.saveAsTextFile(target)
+    result.repartition(1).saveAsTextFile(target)
   }
 }
