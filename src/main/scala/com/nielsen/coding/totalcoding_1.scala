@@ -155,7 +155,7 @@ object totalcoding_1 {
           }
         }
         deleteExistPath(args(4) + "_" + i + ".SEG")
-        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
+        ree.filter(_ != "").saveAsTextFile(args(4) + "_" + i + ".SEG")
         //ree.take(100).foreach(println)
         i = i + 1
       }

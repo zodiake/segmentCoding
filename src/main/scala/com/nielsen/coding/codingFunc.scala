@@ -216,10 +216,15 @@ class codingFunc extends java.io.Serializable {
       if (!rightString.isEmpty()) {
         if (rightString.apply(0) == '*' || rightString.apply(0).toUpper == 'X') {
           rightPack = toRightCoding(rightString.drop(1), c)
-        } else { rightPack = 1 }
+        }
+        else { rightPack = 1 }
         ((leftPack * rightPack) :: packlist) ++ result
-      } else { (leftPack :: packlist) ++ result }
-    } else List()
+      }
+      else {
+        (leftPack :: packlist) ++ result
+      }
+    }
+    else List()
   }
 
   def toLeftCoding(x: String, y: List[Char]): Float = {
@@ -267,7 +272,7 @@ class codingFunc extends java.io.Serializable {
       } else if (temp.head == '.' && !temp.drop(1).isEmpty()) {
         toRightCoding(temp.drop(1), (DSC2BSC(temp.head) :: y.reverse).reverse)
       } else if (temp.head.isDigit && temp.drop(1).isEmpty()) {
-        (DSC2BSC(temp.head) :: y.reverse).reverse.mkString.toFloat
+        try{(DSC2BSC(temp.head) :: y.reverse).reverse.mkString.toFloat}catch {case e:NumberFormatException=>1}
       } else if (!y.isEmpty) {
         num
       } else 1
