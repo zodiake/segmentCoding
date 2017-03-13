@@ -146,7 +146,7 @@ class codingFunc extends java.io.Serializable {
     val index = targetdesc.indexOf("/{")
     if(targetdesc.indexOf("/{")>=0){
       if(targetdesc.indexOf(";")>=0){
-        val lst = targetdesc.split(";").filter(_.indexOf("/{")>=0).map(x => findNagtiveDesc(itemdesc,x))
+        val lst = targetdesc.split(";").filter(i=> !i.trim.isEmpty && i.indexOf("/{")>=0).map(x => findNagtiveDesc(itemdesc,x))
         if(lst.max>=0){
           flag = false
           return lst.max
@@ -163,7 +163,7 @@ class codingFunc extends java.io.Serializable {
 
     if(flag){
       if (targetdesc.indexOf(";") >= 0) { //如果存在分号分割的字符串只要存在一个
-      val targetlist = targetdesc.split(";").filter(x=>x.indexOf("/{")<0).map(x => findDesc(itemdesc, x)).toList // return the index of each string spilt by ";"
+      val targetlist = targetdesc.split(";").filter(x=> !x.trim.isEmpty && x.indexOf("/{")<0).map(x => findDesc(itemdesc, x)).toList // return the index of each string spilt by ";"
         if (targetlist.exists { _ > -1 }) {
           targetlist.filter(_ > -1).min
         } else
