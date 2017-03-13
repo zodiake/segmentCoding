@@ -1,5 +1,6 @@
 package com.spark.coding
 
+import com.esotericsoftware.kryo.KryoSerializable
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**

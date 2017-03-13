@@ -60,7 +60,7 @@ object totalcoding_1 {
           }
           val configFile = sc.textFile(args(1)).map(_.split(",")).collect().toList.filter(_ (1) == catcode)
           val cateConf = sc.textFile(args(3)).map(_.split(",")).collect().toList //add for match bundedpack
-          val testFile = sc.textFile(args(2) + path).map(x => transCateCode(x, cateConf).split(",")).filter(_ (0).toUpperCase() == catcode)
+          val testFile = sc.textFile(args(2) + path, 336).map(x => transCateCode(x, cateConf).split(",")).filter(_ (0).toUpperCase() == catcode)
             .filter(item => (item(1).substring(0, 4) + item(1).substring(6, 8)) == month)
           val seglist = configFile.filter(x => x(3) != "BRAND" && !x(3).contains("SUBBRAND") && x(3) != "PACKSIZE" && x(3) != "PRICETIER" && x(3) != "CATEGORY")
             .map(_ (3)).distinct
@@ -154,7 +154,7 @@ object totalcoding_1 {
           }
         }
         deleteExistPath(args(4) + "_" + i + ".SEG")
-        ree.filter(_ != "").saveAsTextFile(args(4) + "_" + i + ".SEG")
+        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
         //ree.take(100).foreach(println)
         i = i + 1
       }
