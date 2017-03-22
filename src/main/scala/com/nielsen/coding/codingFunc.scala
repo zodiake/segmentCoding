@@ -6,8 +6,8 @@ class codingFunc extends java.io.Serializable {
 
   /**
     * KWLC keyword list coding
-    * @itemdesc target item description
-    * @wordlist key word list
+    * @param itemdesc target item description
+    * @param wordlist key word list
     */
 
   def KWLC(itemdesc: String, wordlist: List[(String, String)], parentlist: List[(String, String)]): String = {
@@ -47,8 +47,8 @@ class codingFunc extends java.io.Serializable {
 
   /**
     * MKWLC multi keyword list coding
-    * @itemdesc target item description
-    * @multiwordlist multi key word list
+    * @param itemdesc target item description
+    * @param multiwordlist multi key word list
     */
 
   def MKWLC(itemdesc: String, multiwordlist: List[List[(String, String)]]): String = {
@@ -68,8 +68,8 @@ class codingFunc extends java.io.Serializable {
 
   /**
     * findDesc find desc split by "/"
-    * @itemdesc target item description
-    * @targetdesc multi desc
+    * @param itemdesc target item description
+    * @param targetdesc multi desc
     */
   /*
    * spilt by "/" -- every str can be found in itemdesc -- return the min index
@@ -123,7 +123,7 @@ class codingFunc extends java.io.Serializable {
 
   /**
     * findEng judge if the English is exactly only has English character
-    * @itemdesc target item description
+    * @param itemdesc target item description
     */
 
   private def findEng(itemdesc: String): String = {

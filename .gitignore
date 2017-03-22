@@ -10,3 +10,4 @@ target/
 .classpath
 src/main/scala/*.sc
 /src/main/scala/com/nielsen/sheet1.sc
+/src/main/scala/com/sheet1.sc
