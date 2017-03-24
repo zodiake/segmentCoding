@@ -60,7 +60,7 @@ object totalcoding_1 {
           }
           val configFile = sc.textFile(args(1)).map(_.split(",")).collect().toList.filter(_ (1) == catcode)
           val cateConf = sc.textFile(args(3)).map(_.split(",")).collect().toList //add for match bundedpack
-          val testFile = sc.textFile(args(2) + path, 336).map(x => transCateCode(x, cateConf).split(",")).filter(_ (0).toUpperCase() == catcode)
+          val testFile = sc.textFile(args(2) + path,336).map(x => transCateCode(x, cateConf).split(",")).filter(_ (0).toUpperCase() == catcode)
             .filter(item => (item(1).substring(0, 4) + item(1).substring(6, 8)) == month)
           val seglist = configFile.filter(x => x(3) != "BRAND" && !x(3).contains("SUBBRAND") && x(3) != "PACKSIZE" && x(3) != "PRICETIER" && x(3) != "CATEGORY")
             .map(_ (3)).distinct
@@ -82,7 +82,7 @@ object totalcoding_1 {
                   .groupBy(_._1)
                   .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
                   //.map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-                  .map(x => (x._1,s"${x._1},1526,${x._2.toString}${unit},${p2Packsize1.getOrElse(x._1,"UNKNOWN")},${x._1.substring(0,8)},${x._1.substring(8,13)}"))
+                  .map(x => (x._1,s"${x._1},1526,${x._2.toString}${unit},${p1Packsize2.getOrElse(x._1,"UNKNOWN")},${x._1.substring(0,8)},${x._1.substring(8,13)}"))
 
                 val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
                   .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace(unit, "")=="")0 else x.packsize2.replace(unit,"").toFloat))
@@ -91,7 +91,7 @@ object totalcoding_1 {
                   .groupBy(_._1)
                   .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
                   //.map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "G" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-                  .map(x => (x._1,s"${x._1},1526,${p1Packsize2.getOrElse(x._1,"UNKNOWN")},${x._2.toString}${unit},${x._1.substring(0, 8)},${x._1.substring(8, 13)}"))
+                  .map(x => (x._1,s"${x._1},1526,${p2Packsize1.getOrElse(x._1,"UNKNOWN")},${x._2.toString}${unit},${x._1.substring(0, 8)},${x._1.substring(8, 13)}"))
 
                 val idList=(averageP1.map(_._1) ++ averageP2.map(_._1)).collect().toList
                 val c=(averageP1++averageP2)
