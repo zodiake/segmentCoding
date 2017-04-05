@@ -345,7 +345,7 @@ object RawDataFormat {
       deleteExistPath(pathRaw)
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }
-
+    sc.stop()
   }
 
   def parseStrTONum(str: String): Double = {

@@ -10,7 +10,7 @@ object TMTBFormat {
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf()
     conf.setAppName("TMTBFormat")
-    // conf.setMaster("local")
+    //conf.setMaster("local")
 
     val sc = new SparkContext(conf)
 
@@ -41,9 +41,10 @@ object TMTBFormat {
       array.mkString(",")
     })
 
-    descFormat.saveAsTextFile(args(0) + ".FORMAT")
+    res.saveAsTextFile(args(0) + ".FORMAT")
     filter.saveAsTextFile(args(0) + ".FILTER")
 
+    //res.take(1).foreach(println)
     //println(descFormat)
 
   }
