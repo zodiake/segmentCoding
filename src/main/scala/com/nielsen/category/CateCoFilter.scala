@@ -16,7 +16,7 @@ import org.apache.spark.sql.SparkSession
  */
 object CateCoFilter {
   def main(args: Array[String]): Unit = {
-    Class.forName("oracle.jdbc.driver.OracleDriver")
+    //Class.forName("oracle.jdbc.driver.OracleDriver")
     val prop = new java.util.Properties
     prop.setProperty("driver", "oracle.jdbc.driver.OracleDriver")
     prop.setProperty("user", "ecom")
@@ -24,8 +24,8 @@ object CateCoFilter {
     val url = "jdbc:oracle:thin:@scch01prcluscan:1521/ECCH02PR"
     val table = "test_qirong_category_fix"
     val conf = new SparkConf()
-    conf.setMaster("local")
-    conf.setAppName("catcofilter")
+    //conf.setMaster("local")
+    //conf.setAppName("catcofilter")
     val spark = SparkSession.builder().config(conf).getOrCreate()
     import spark.implicits._
     val sc = spark.sparkContext

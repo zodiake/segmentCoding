@@ -1,6 +1,6 @@
 name := """sparkSegmentCoding"""
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.11.3"
 
 resolvers +=
   "nlpcn" at "http://maven.nlpcn.org"
