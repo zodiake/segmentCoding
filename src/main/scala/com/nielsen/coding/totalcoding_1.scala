@@ -461,11 +461,26 @@ object totalcoding_1 {
 
           val packsizeno = configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).distinct.head
 
-          val p1=getFinalPacksize(packsize1)
-          val p2=getFinalPacksize(packsize2)
-          item.packsize1=packsize1
-          item.packsize2=packsize2
-          item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
+          if(catCode=="IMF"||catCode=="DIAP"){
+            val p1=getFinalPacksize(packsize1)
+            val p2=getFinalPacksize(packsize2)
+            item.packsize1=packsize1
+            item.packsize2=packsize2
+            if(item.packsize1.isEmpty && !item.packsize2.isEmpty){
+              item.packsize1=item.packsize2
+              item_result = (item.ITEMID + "," + packsizeno + "," + p2 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
+            }else if(!item.packsize1.isEmpty && item.packsize2.isEmpty){
+              item.packsize2=item.packsize1
+              item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p1 + "," + item.perCode + "," + item.storeCode) :: item_result
+            }else
+              item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
+          }else{
+            val p1=getFinalPacksize(packsize1)
+            val p2=getFinalPacksize(packsize2)
+            item.packsize1=packsize1
+            item.packsize2=packsize2
+            item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
+          }
         }
       }else{
         val packsize = packsize_conf.map(y => {
