@@ -69,53 +69,7 @@ object totalcoding_1 {
 
           if (args(5).contains("PACKSIZE") || args(5) == "ALL") {
             if(args(7)=="tmtb"){
-              def computerAverage(unit:String,category:String): Unit = {
-                val p1None=tempre.map(_._1).filter(i=>i.packsize1==""&&i.catCode==category).collect().toList
-                val p1Packsize2=p1None.map(item=>(item.ITEMID,if(item.packsize2.isEmpty)"UNKNOWN"else item.packsize2)).toMap
-                val p2None=tempre.map(_._1).filter(i=>i.packsize2==""&&i.catCode==category).collect().toList
-                val p2Packsize1=p2None.map(item=>(item.ITEMID,if(item.packsize1.isEmpty)"UNKNOWN"else item.packsize1)).toMap
-
-                val averageP1=tempre.map(_._1).filter(i=> i.packsize1!="")
-                  .map(x => (p1None.filter(y => item_prepare(y, x, seglist)), if(x.packsize1.replace(unit, "")=="")0 else x.packsize1.replace(unit,"").toFloat))
-                  .filter(!_._1.isEmpty)
-                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                  .groupBy(_._1)
-                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  //.map(x => (x._1,x._1 + ",1526," + x._2.toString +  "," + p1Packsize2(x._1) + "G" + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-                  .map(x => (x._1,s"${x._1},1526,${x._2.toString}${unit},${p1Packsize2.getOrElse(x._1,"UNKNOWN")},${x._1.substring(0,8)},${x._1.substring(8,13)}"))
-
-                val averageP2=tempre.map(_._1).filter(i=> i.packsize2!="")
-                  .map(x => (p2None.filter(y => item_prepare(y, x, seglist)), if(x.packsize2.replace(unit, "")=="")0 else x.packsize2.replace(unit,"").toFloat))
-                  .filter(!_._1.isEmpty)
-                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                  .groupBy(_._1)
-                  .map(x => x._1 -> x._2.map(_._2).sum / x._2.map(i=>i._2).size)
-                  //.map(x => (x._1,x._1 + ",1526," + p2Packsize2(x._1) + "G" + "," + x._2.toString + "," + x._1.substring(0, 8) + "," + x._1.substring(8, 13)))
-                  .map(x => (x._1,s"${x._1},1526,${p2Packsize1.getOrElse(x._1,"UNKNOWN")},${x._2.toString}${unit},${x._1.substring(0, 8)},${x._1.substring(8, 13)}"))
-
-                val idList=(averageP1.map(_._1) ++ averageP2.map(_._1)).collect().toList
-                val c=(averageP1++averageP2)
-                val r=c.groupByKey.map{g=>
-                  if(g._2.size==2){
-                    val p1=g._2.head.split(",")
-                    val p2=g._2.tail.head.split(",")(3)
-                    p1(3)=p2
-                    p1.mkString(",")
-                  } else{
-                    g._2.head
-                  }
-                }
-
-                ree=tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y, idList)).mkString("\n"))++ree
-                ree=r++ree
-              }
-              if (catcode == "IMF") {
-                computerAverage("G","IMF")
-              } else if (catcode == "DIAP") {
-                computerAverage("P","DIAP")
-              } else {
-                ree = tempre.map(_._2.mkString("\n")) ++ ree
-              }
+              ree = tempre.map(_._2.mkString("\n")) ++ ree
             }else{
               var itemIdLst = List[String]()  //change for remove muti packsize result
               if(catcode == "IMF"){
