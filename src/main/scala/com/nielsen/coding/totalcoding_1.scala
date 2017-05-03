@@ -45,7 +45,7 @@ object totalcoding_1 {
       var segNoCombine = ""
       for (month <- months) {
         var ree = sc.parallelize(templist)
-        for (catcode <- catlist) {
+        val rddResult = for (catcode <- catlist) yield {
           if (catcode == "BIS") {
             KRAFile = sc.textFile(args(6)).map(_.split(",")).collect().toList
           }
@@ -60,56 +60,19 @@ object totalcoding_1 {
           }
           val configFile = sc.textFile(args(1)).map(_.split(",")).collect().toList.filter(_ (1) == catcode)
           val cateConf = sc.textFile(args(3)).map(_.split(",")).collect().toList //add for match bundedpack
-          val testFile = sc.textFile(args(2) + path,336).map(x => transCateCode(x, cateConf).split(",")).filter(_ (0).toUpperCase() == catcode)
+          val testFile = sc.textFile(args(2) + path).map(x => transCateCode(x, cateConf).split(",")).filter(_ (0).toUpperCase() == catcode)
             .filter(item => (item(1).substring(0, 4) + item(1).substring(6, 8)) == month)
           val seglist = configFile.filter(x => x(3) != "BRAND" && !x(3).contains("SUBBRAND") && x(3) != "PACKSIZE" && x(3) != "PRICETIER" && x(3) != "CATEGORY")
             .map(_ (3)).distinct
           val subbrand_namelist = configFile.filter(_ (3).contains("SUBBRAND")).map(_ (3)).distinct
-          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, args(5), KRAFile, cateCodeCombine, segNoCombine,args(7)))
+          val tempre = testFile.map(x => coding(x, configFile, seglist, subbrand_namelist, args(5), KRAFile, cateCodeCombine, segNoCombine, args(7)))
 
-          if (args(5).contains("PACKSIZE") || args(5) == "ALL") {
-            if(args(7)=="tmtb"){
-              ree = tempre.map(_._2.mkString("\n")) ++ ree
-            }else{
-              var itemIdLst = List[String]()  //change for remove muti packsize result
-              if(catcode == "IMF"){
-                val item_withnopack = tempre.map(_._1).filter(_.packsize == "").collect().toList
-                val item_withpack = tempre.map(_._1).filter(_.packsize != "")
-                  .map(x => (item_withnopack.filter(y => item_prepare(y, x, seglist)), x.packsize.replace("G", "").toFloat))
-                  .filter(!_._1.isEmpty )
-                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                  .groupBy(_._1)
-                  .map(x => x._1 -> x._2.map(_._2).sum/x._2.map(_._2).size)
-                  .map(x => (x._1 + ",1526," + x._2.toString + "G"+","+ x._2.toString + "G"+","+x._1.substring(0, 8)+","+x._1.substring(8, 13),x._1))
-                itemIdLst = item_withpack.collect().map(_._2).toList
-                ree = tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y,itemIdLst)).mkString("\n")) ++ ree
-                ree = item_withpack.map(_._1) ++ ree
-
-              }else if(catcode == "DIAP"){
-
-                val item_withnopack = tempre.map(_._1).filter(_.packsize == "").collect().toList
-                val item_withpack = tempre.map(_._1).filter(_.packsize != "")
-                  .map(x => (item_withnopack.filter(y => item_prepare(y, x, seglist)), x.packsize.replace("P", "").toFloat))
-                  .filter(!_._1.isEmpty )
-                  .flatMap(x => x._1.map(y => y.ITEMID -> x._2))
-                  .groupBy(_._1)
-                  .map(x => x._1 -> x._2.map(_._2).sum/x._2.map(_._2).size)
-                  .map(x => (x._1 + ",1526," + x._2.toString + "P"+","+ x._2.toString + "P"+","+x._1.substring(0, 8)+","+x._1.substring(8, 13),x._1))
-                itemIdLst = item_withpack.collect().map(_._2).toList
-                ree = tempre.map(_._2).map(x => x.filter(y => itemTBRmove(y,itemIdLst)).mkString("\n"))  ++ ree
-                ree = item_withpack.map(_._1) ++ ree
-
-              }else{
-                ree = tempre.map(_._2.mkString("\n")) ++ ree
-              }
-            }
-          } else {
-            ree = tempre.map(_._2.mkString("\n")) ++ ree
-          }
+          tempre.map(_._2.mkString("\n"))
         }
         deleteExistPath(args(4) + "_" + i + ".SEG")
-        ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
-        //ree.take(100).foreach(println)
+        rddResult.reduce((rdd1, rdd2) => rdd1.union(rdd2)).distinct().saveAsTextFile(args(4) + "_" + i + ".SEG")
+        //ree.filter(_ != "").distinct.saveAsTextFile(args(4) + "_" + i + ".SEG")
+        //rddResult.reduce((rdd1, rdd2) => rdd1.union(rdd2)).take(10).foreach(println)
         i = i + 1
       }
 
@@ -139,156 +102,7 @@ object totalcoding_1 {
     }
    }*/
 
-  def itemTBRmove(item: String, itemIdLst: List[String]): Boolean = {
-    var flag = true //代表不需要被移除
-    val itemArr = item.split(",")
-    breakable(
-      itemIdLst.map { x =>
-        if (x.equalsIgnoreCase(itemArr(0)) && itemArr(1) == "1526") {
-          flag = false
-          break
-        }
-      }
-    )
-
-    return flag
-  }
-
-
-  def deleteExistPath(pathRaw: String) {
-    val outPut = new Path(pathRaw)
-    val hdfs = FileSystem.get(URI.create(pathRaw), new Configuration())
-    if (hdfs.exists(outPut)) hdfs.delete(outPut, true)
-  }
-
-  //itemfile -- > category information file
-  def itemmaster_brand(catcode: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
-    val itemlist = itemfile.filter(_ (1) == catcode).filter(_ (3).toUpperCase() == "BRAND")
-    val eccbrandlist = itemlist.map(x => (x.head, x(5).toUpperCase()))
-      .filter(x => x._2 != "" && x._2 != "其他牌子")
-
-    val eccshortdesc = itemlist.map(x => (x.head, x(6).toUpperCase()))
-      .filter(x => x._2 != "")
-
-    val eccmanulist = itemlist.map(x => (x.head, x(7).toUpperCase()))
-      .filter(x => x._2 != "" && x._2 != "其他厂家")
-
-    val ecbrandlist = itemlist.map(x => (x.head, x(8).toUpperCase()))
-      .filter(x => x._2 != "" && x._2 != "O.Brand")
-
-    val ecmanulist = itemlist.map(x => (x.head, x(9).toUpperCase()))
-      .filter(x => x._2 != "" && x._2 != "O.Manu")
-
-    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
-
-    return List(eccbrandlist, eccshortdesc, eccmanulist, ecbrandlist, ecmanulist, parentidlist)
-  }
-
-  def itemmaster_subbrand(catcode: String, itemfile: List[Array[String]], subbrand_name: String): List[List[(String, String)]] = {
-    val itemlist = itemfile.filter(_ (1) == catcode).filter(_ (3).toUpperCase() == subbrand_name)
-    val eccbrandlist = itemlist.map(x => (x.head, x(5).toUpperCase()))
-      .filter(x => x._2 != "" && x._2 != "其他牌子")
-
-    val eccshortdesc = itemlist.map(x => (x.head, x(6).toUpperCase()))
-      .filter(x => x._2 != "")
-
-    val ecbrandlist = itemlist.map(x => (x.head, x(8).toUpperCase()))
-      .filter(x => x._2 != "" && x._2 != "O.Brand")
-
-    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
-
-    return List(eccbrandlist, eccshortdesc, ecbrandlist, parentidlist)
-  }
-
-  def itemmaster_segment(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
-    val itemlist = itemfile.filter(_ (1) == catcode).filter(x => x(3).toUpperCase() == segment)
-    val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
-      .filter(x => x._2 != "")
-
-    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
-
-    return List(desc, parentidlist)
-  }
-
-  //for prepare un-known stage keywords -- first priority
-  def itemmaster_segment_forFirst(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
-    val itemlist = itemfile.filter(_ (1) == catcode).filter(x => x(3).toUpperCase() == segment).filter(x => x(4) == "不知道")
-    val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
-      .filter(x => x._2 != "").filter(_._2 != "")
-
-    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
-
-    return List(desc, parentidlist)
-  }
-
-  //for prepare contains "岁，月" keywords -- second priority
-  def itemmaster_segment_forSecond(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
-    val itemlist = itemfile.filter(_ (1) == catcode).filter(x => x(3).toUpperCase() == segment).filter(x => x(4) != "不知道")
-    val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
-      .filter(x => x._2 != "").map(x => (x._1, (x._2.split(";").toList.filter(_.contains("岁")) ::: x._2.split(";").toList.filter(_.contains("月"))).mkString(";"))).filter(_._2 != "")
-
-    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
-
-    return List(desc, parentidlist)
-  }
-
-  //for prepare doesn't contains "岁，月" keywords -- third priority
-  def itemmaster_segment_forThird(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
-    val itemlist = itemfile.filter(_ (1) == catcode).filter(x => x(3).toUpperCase() == segment).filter(x => x(4) != "不知道")
-    val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
-      .filter(x => x._2 != "").map(x => (x._1, x._2.split(";").toList.filter(!_.contains("岁")).filter(!_.contains("月")).mkString(";"))).filter(_._2 != "")
-    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
-    return List(desc, parentidlist)
-  }
-
-  def itemmaster_packsize(catcode: String, itemfile: List[Array[String]]): List[String] = {
-    val itemlist = itemfile.filter(_ (1) == catcode).filter(_ (3).toUpperCase() == "PACKSIZE")
-    if (!itemlist.isEmpty) {
-      val desc = itemlist.map(_ (5).toUpperCase())
-        .filter(_ != "")
-        .mkString(";")
-        .split(";")
-        .toList
-      return desc
-    } else return List()
-  }
-
-  def itemmaster_bundleSeg(catcode: String, itemfile: List[Array[String]]): List[(String, String)] = {
-    val itemlist = itemfile.filter(_ (1) == catcode).filter(_ (3).toUpperCase() == "SUBCATEGORY")
-    val bundleSeglst = itemlist.map(x => (x.head, x(5).toUpperCase()))
-      .filter(x => x._2 != "")
-
-    return bundleSeglst
-  }
-
-  def other_seg_coding(configFile: List[Array[String]], testFile: List[Array[String]],
-                       segname: String, segno: String): List[(String, String)] = {
-    val codingFuct = new codingFunc
-    val others = configFile.filter(_ (3) == segname).filter(_ (5) == "其他")
-    var otherdesc = ""
-
-    if (!others.isEmpty) {
-      otherdesc = others.head.head
-    } else {
-      otherdesc = ""
-    }
-
-    val segmentresult = testFile.map(x => (
-      codingFuct.MKWLC(
-        x(4) + x(5).toUpperCase(),
-        itemmaster_segment(x(0), segname, configFile)
-      ), x(1)
-    ))
-      .map(x => if (x._1 == "") {
-        (otherdesc, x._2)
-      } else (x._1, x._2))
-      .filter(_._1 != "")
-      .map(x => (segno + "," + x._1, x._2))
-    return segmentresult
-  }
-
-
-  def coding(item_raw: Array[String], configFile: List[Array[String]], seglist: List[String], subbrand_namelist: List[String], codingType: String, krafile: List[Array[String]], cateCodeCombine: String, segCombine: String,t:String): (item, List[String]) = {
+  def coding(item_raw: Array[String], configFile: List[Array[String]], seglist: List[String], subbrand_namelist: List[String], codingType: String, krafile: List[Array[String]], cateCodeCombine: String, segCombine: String, t: String): (item, List[String]) = {
 
     var brandFlg = false
     var packsizeFlg = false
@@ -330,7 +144,7 @@ object totalcoding_1 {
     item.description = (item_raw(2) + " " + item_raw(3) + " " + item_raw(4) + " " + item_raw(5)).toUpperCase()
 
     item.bundleSeg = item_raw(8)
-    item.catCode=item_raw(0)
+    item.catCode = item_raw(0)
 
     var catCode = item_raw(0)
 
@@ -372,17 +186,17 @@ object totalcoding_1 {
 
     val packsize_conf = itemmaster_packsize(catCode, configFileNew)
     if (packsizeFlg) {
-      if(t=="tmtb"){
-        def packsize(str:String):String={
-          val pack= packsize_conf.map{y =>
-            val r=codingFunc.PacksizeCoding(str, y, List())
+      if (t == "tmtb") {
+        def packsize(str: String): String = {
+          val pack = packsize_conf.map { y =>
+            val r = codingFunc.PacksizeCoding(str, y, List())
             val p = if (!r.isEmpty) {
               r.max.toString() //两个相同单位取了最大的
             } else {
               ""
             }
-            (p,y)
-          }.filter(i=>i._1 != "" && i._1 != "0.0").map(x => codingFunc.packsizetransform(x))
+            (p, y)
+          }.filter(i => i._1 != "" && i._1 != "0.0").map(x => codingFunc.packsizetransform(x))
             .distinct.sortBy(_._1.toDouble).reverse.map(x => x._1 + x._2)
           if (!pack.isEmpty) {
             pack.head //所有单位之间区最大的
@@ -391,37 +205,27 @@ object totalcoding_1 {
           }
         }
 
-        def getFinalPacksize(pack:String):String={
-          val p=if(pack.isEmpty){
-            if(catCode=="IMF")
-              "0G"
-            else if(catCode == "DIAP")
-              "0P"
-            else
-              "UNKNOWN"
-          }else{
+        def getFinalPacksize(pack: String): String = {
+          if (pack.isEmpty) {
+            "UNKNOWN"
+          } else {
             pack
           }
-          p
         }
 
-        item.packsize1=""
-        item.packsize2=""
-        if(!configFileNew.filter(_(3) == "PACKSIZE").map(_(2)).isEmpty){
-          val brandDesc=item_raw(2) + " " + item_raw(3) + " " + item_raw(4)
-          val attr=item_raw(5)
-          val packsize1=packsize(brandDesc.toUpperCase)
-          val packsize2=packsize(attr.toUpperCase)
+        if (!configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).isEmpty) {
+          val brandDesc = item_raw(2) + " " + item_raw(3) + " " + item_raw(4)
+          val attr = item_raw(5)
+          val packsize1 = packsize(brandDesc.toUpperCase)
+          val packsize2 = packsize(attr.toUpperCase)
 
           val packsizeno = configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).distinct.head
 
-          val p1=getFinalPacksize(packsize1)
-          val p2=getFinalPacksize(packsize2)
-          item.packsize1=packsize1
-          item.packsize2=packsize2
+          val p1 = getFinalPacksize(packsize1)
+          val p2 = getFinalPacksize(packsize2)
           item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
         }
-      }else{
+      } else {
         val packsize = packsize_conf.map(y => {
           val list = codingFunc.PacksizeCoding(item.description, y, List())
           (if (!list.isEmpty) {
@@ -444,13 +248,7 @@ object totalcoding_1 {
           var packsizeno = ""
           if (!configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).isEmpty) {
             packsizeno = configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).distinct.head
-            if (catCode == "IMF") {
-              item_result = (item.ITEMID + "," + packsizeno + "," + "0G" + "," + "0G" + "," + item.perCode + "," + item.storeCode) :: item_result
-            } else if (catCode == "DIAP") {
-              item_result = (item.ITEMID + "," + packsizeno + "," + "0P" + "," + "0P" + "," + item.perCode + "," + item.storeCode) :: item_result
-            } else {
-              item_result = (item.ITEMID + "," + packsizeno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
-            }
+            item_result = (item.ITEMID + "," + packsizeno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
           }
         }
       }
@@ -501,12 +299,20 @@ object totalcoding_1 {
       //bunded seg coding
       for (seg <- finalSeglst) {
         if (catCode == "FB" && seg == "CAPACITY") {
-          if(t=="tmtb"){
+          if (t == "tmtb") {
             val capacity_conf = configFileNew.filter(x => x(3) == "CAPACITY" && x(1) == "FB")
             val capacityno = capacity_conf.head(2)
-            val p1=try{item.packsize1.replace("ML","").toFloat}catch{case e:NumberFormatException=>0}
-            val p2=try{item.packsize2.replace("ML","").toFloat}catch{case e:NumberFormatException=>0}
-            val p=Math.max(p1,p2)
+            val p1 = try {
+              item.packsize1.replace("ML", "").toFloat
+            } catch {
+              case e: NumberFormatException => 0
+            }
+            val p2 = try {
+              item.packsize2.replace("ML", "").toFloat
+            } catch {
+              case e: NumberFormatException => 0
+            }
+            val p = Math.max(p1, p2)
             val capacity_result = capacity_conf.filter(x => codingFunc.checkprice(p.toString, x(5)))
             if (capacity_result.isEmpty || capacity_result.size > 1) {
               item_result = (item.ITEMID + "," + capacityno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
@@ -516,10 +322,10 @@ object totalcoding_1 {
               val segcode = configFileNew.filter(_ (0) == item.capacity).map(_ (10)).head
               item_result = (item.ITEMID + "," + capacityno + "," + item.capacity + "," + segcode + "," + item.perCode + "," + item.storeCode) :: item_result
             }
-          }else{
+          } else {
             val capacity_conf = configFileNew.filter(x => x(3) == "CAPACITY" && x(1) == "FB")
             val capacityno = capacity_conf.head(2)
-            val capacity_result = capacity_conf.filter(x => codingFunc.checkprice(item.packsize.replace("ML","").toString, x(5)))
+            val capacity_result = capacity_conf.filter(x => codingFunc.checkprice(item.packsize.replace("ML", "").toString, x(5)))
             if (capacity_result.isEmpty || capacity_result.size > 1) {
               item_result = (item.ITEMID + "," + capacityno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
             } else {
@@ -637,6 +443,162 @@ object totalcoding_1 {
     return (item, item_result)
   }
 
+  //itemfile -- > category information file
+  def itemmaster_brand(catcode: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
+    val itemlist = itemfile.filter(_ (1) == catcode).filter(_ (3).toUpperCase() == "BRAND")
+    val eccbrandlist = itemlist.map(x => (x.head, x(5).toUpperCase()))
+      .filter(x => x._2 != "" && x._2 != "其他牌子")
+
+    val eccshortdesc = itemlist.map(x => (x.head, x(6).toUpperCase()))
+      .filter(x => x._2 != "")
+
+    val eccmanulist = itemlist.map(x => (x.head, x(7).toUpperCase()))
+      .filter(x => x._2 != "" && x._2 != "其他厂家")
+
+    val ecbrandlist = itemlist.map(x => (x.head, x(8).toUpperCase()))
+      .filter(x => x._2 != "" && x._2 != "O.Brand")
+
+    val ecmanulist = itemlist.map(x => (x.head, x(9).toUpperCase()))
+      .filter(x => x._2 != "" && x._2 != "O.Manu")
+
+    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
+
+    return List(eccbrandlist, eccshortdesc, eccmanulist, ecbrandlist, ecmanulist, parentidlist)
+  }
+
+  def itemmaster_subbrand(catcode: String, itemfile: List[Array[String]], subbrand_name: String): List[List[(String, String)]] = {
+    val itemlist = itemfile.filter(_ (1) == catcode).filter(_ (3).toUpperCase() == subbrand_name)
+    val eccbrandlist = itemlist.map(x => (x.head, x(5).toUpperCase()))
+      .filter(x => x._2 != "" && x._2 != "其他牌子")
+
+    val eccshortdesc = itemlist.map(x => (x.head, x(6).toUpperCase()))
+      .filter(x => x._2 != "")
+
+    val ecbrandlist = itemlist.map(x => (x.head, x(8).toUpperCase()))
+      .filter(x => x._2 != "" && x._2 != "O.Brand")
+
+    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
+
+    return List(eccbrandlist, eccshortdesc, ecbrandlist, parentidlist)
+  }
+
+  def itemmaster_segment(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
+    val itemlist = itemfile.filter(_ (1) == catcode).filter(x => x(3).toUpperCase() == segment)
+    val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
+      .filter(x => x._2 != "")
+
+    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
+
+    return List(desc, parentidlist)
+  }
+
+  //for prepare un-known stage keywords -- first priority
+  def itemmaster_segment_forFirst(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
+    val itemlist = itemfile.filter(_ (1) == catcode).filter(x => x(3).toUpperCase() == segment).filter(x => x(4) == "不知道")
+    val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
+      .filter(x => x._2 != "").filter(_._2 != "")
+
+    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
+
+    return List(desc, parentidlist)
+  }
+
+  //for prepare contains "岁，月" keywords -- second priority
+  def itemmaster_segment_forSecond(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
+    val itemlist = itemfile.filter(_ (1) == catcode).filter(x => x(3).toUpperCase() == segment).filter(x => x(4) != "不知道")
+    val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
+      .filter(x => x._2 != "").map(x => (x._1, (x._2.split(";").toList.filter(_.contains("岁")) ::: x._2.split(";").toList.filter(_.contains("月"))).mkString(";"))).filter(_._2 != "")
+
+    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
+
+    return List(desc, parentidlist)
+  }
+
+  //for prepare doesn't contains "岁，月" keywords -- third priority
+  def itemmaster_segment_forThird(catcode: String, segment: String, itemfile: List[Array[String]]): List[List[(String, String)]] = {
+    val itemlist = itemfile.filter(_ (1) == catcode).filter(x => x(3).toUpperCase() == segment).filter(x => x(4) != "不知道")
+    val desc = itemlist.map(x => (x.head, x(5).toUpperCase()))
+      .filter(x => x._2 != "").map(x => (x._1, x._2.split(";").toList.filter(!_.contains("岁")).filter(!_.contains("月")).mkString(";"))).filter(_._2 != "")
+    val parentidlist = itemlist.map(x => (x.head, x.reverse.head))
+    return List(desc, parentidlist)
+  }
+
+  def itemmaster_packsize(catcode: String, itemfile: List[Array[String]]): List[String] = {
+    val itemlist = itemfile.filter(_ (1) == catcode).filter(_ (3).toUpperCase() == "PACKSIZE")
+    if (!itemlist.isEmpty) {
+      val desc = itemlist.map(_ (5).toUpperCase())
+        .filter(_ != "")
+        .mkString(";")
+        .split(";")
+        .toList
+      return desc
+    } else return List()
+  }
+
+  def itemmaster_bundleSeg(catcode: String, itemfile: List[Array[String]]): List[(String, String)] = {
+    val itemlist = itemfile.filter(_ (1) == catcode).filter(_ (3).toUpperCase() == "SUBCATEGORY")
+    val bundleSeglst = itemlist.map(x => (x.head, x(5).toUpperCase()))
+      .filter(x => x._2 != "")
+
+    return bundleSeglst
+  }
+
+  //add for match bundedpack
+  def transCateCode(item: String, cateConf: List[Array[String]]): String = {
+    val cateTrans = cateConf.filter(x => x(0).equalsIgnoreCase(item.split(",")(0)))
+    if (!cateTrans.isEmpty) {
+      item.replace(item.split(",")(0), cateTrans.map(_ (1)).apply(0)) + "," + item.split(",")(0)
+    } else {
+      item + "," + " "
+    }
+  }
+
+  def itemTBRmove(item: String, itemIdLst: List[String]): Boolean = {
+    var flag = true //代表不需要被移除
+    val itemArr = item.split(",")
+    breakable(
+      itemIdLst.map { x =>
+        if (x.equalsIgnoreCase(itemArr(0)) && itemArr(1) == "1526") {
+          flag = false
+          break
+        }
+      }
+    )
+
+    return flag
+  }
+
+  def deleteExistPath(pathRaw: String) {
+    val outPut = new Path(pathRaw)
+    val hdfs = FileSystem.get(URI.create(pathRaw), new Configuration())
+    if (hdfs.exists(outPut)) hdfs.delete(outPut, true)
+  }
+
+  def other_seg_coding(configFile: List[Array[String]], testFile: List[Array[String]],
+                       segname: String, segno: String): List[(String, String)] = {
+    val codingFuct = new codingFunc
+    val others = configFile.filter(_ (3) == segname).filter(_ (5) == "其他")
+    var otherdesc = ""
+
+    if (!others.isEmpty) {
+      otherdesc = others.head.head
+    } else {
+      otherdesc = ""
+    }
+
+    val segmentresult = testFile.map(x => (
+      codingFuct.MKWLC(
+        x(4) + x(5).toUpperCase(),
+        itemmaster_segment(x(0), segname, configFile)
+      ), x(1)
+    ))
+      .map(x => if (x._1 == "") {
+        (otherdesc, x._2)
+      } else (x._1, x._2))
+      .filter(_._1 != "")
+      .map(x => (segno + "," + x._1, x._2))
+    return segmentresult
+  }
 
   def item2String(item: item): String = {
     return item.ITEMID + "," + "1526" + "," + item.packsize_new
@@ -666,17 +628,6 @@ object totalcoding_1 {
       }
     }
     return check
-  }
-
-
-  //add for match bundedpack
-  def transCateCode(item: String, cateConf: List[Array[String]]): String = {
-    val cateTrans = cateConf.filter(x => x(0).equalsIgnoreCase(item.split(",")(0)))
-    if (!cateTrans.isEmpty) {
-      item.replace(item.split(",")(0), cateTrans.map(_ (1)).apply(0)) + "," + item.split(",")(0)
-    } else {
-      item + "," + " "
-    }
   }
 }
 
