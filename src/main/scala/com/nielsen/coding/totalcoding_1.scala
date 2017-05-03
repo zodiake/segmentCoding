@@ -9,7 +9,17 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.util.control.Breaks.{break, breakable}
 
-
+/*
+ *@param args
+ * IMF
+ * hdfs://hkgrherfpp016:9000/CONF_DATA/SEGCONF
+ * /home/zodiake/Downloads/test_file/ONE_LINE
+ * hdfs://hkgrherfpp016:9000/CONF_DATA/CATCONF
+ * hdfs://hkgrherfpp016:9000/TEST/Raphael/RAPHAEL_ALL_JAR_TEST/TMTB_20171401.SEGCO
+ * PACKSIZE
+ * hdfs://hkgrherfpp016:9000/CONF_DATA/krasegment
+ * tmtb
+ */
 object totalcoding_1 {
 
   def main(args: Array[String]) {
