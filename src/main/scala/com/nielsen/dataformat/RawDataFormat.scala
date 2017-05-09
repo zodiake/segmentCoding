@@ -198,7 +198,7 @@ object RawDataFormat {
           value(6).toDouble + value(8).toDouble, //salesvalue
           value(4).toDouble + value(7).toDouble, //salesvolume
           value(5).toDouble + value(8).toDouble,
-          storeCode //payvalue
+          value(5) //payvalue
         ).toCsvString(year)
       })
 
