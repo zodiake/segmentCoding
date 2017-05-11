@@ -70,7 +70,7 @@ object totalcoding_1 {
           }
           val configFile = sc.textFile(args(1)).map(_.split(",")).collect().toList.filter(_ (1) == catcode)
           val cateConf = sc.textFile(args(3)).map(_.split(",")).collect().toList //add for match bundedpack
-          val testFile = sc.textFile(args(2) + path,336).map(x => transCateCode(x, cateConf).split(",")).filter(_ (0).toUpperCase() == catcode)
+          val testFile = sc.textFile(args(2) + path, 336).map(x => transCateCode(x, cateConf).split(",")).filter(_ (0).toUpperCase() == catcode)
             .filter(item => (item(1).substring(0, 4) + item(1).substring(6, 8)) == month)
           val seglist = configFile.filter(x => x(3) != "BRAND" && !x(3).contains("SUBBRAND") && x(3) != "PACKSIZE" && x(3) != "PRICETIER" && x(3) != "CATEGORY")
             .map(_ (3)).distinct
@@ -223,6 +223,8 @@ object totalcoding_1 {
           }
         }
 
+        item.packsize1 = ""
+        item.packsize2 = ""
         if (!configFileNew.filter(_ (3) == "PACKSIZE").map(_ (2)).isEmpty) {
           val brandDesc = item_raw(2) + " " + item_raw(3) + " " + item_raw(4)
           val attr = item_raw(5)
@@ -233,6 +235,8 @@ object totalcoding_1 {
 
           val p1 = getFinalPacksize(packsize1)
           val p2 = getFinalPacksize(packsize2)
+          item.packsize1 = packsize1
+          item.packsize2 = packsize2
           item_result = (item.ITEMID + "," + packsizeno + "," + p1 + "," + p2 + "," + item.perCode + "," + item.storeCode) :: item_result
         }
       } else {
@@ -563,6 +567,12 @@ object totalcoding_1 {
     }
   }
 
+  def deleteExistPath(pathRaw: String) {
+    val outPut = new Path(pathRaw)
+    val hdfs = FileSystem.get(URI.create(pathRaw), new Configuration())
+    if (hdfs.exists(outPut)) hdfs.delete(outPut, true)
+  }
+
   def itemTBRmove(item: String, itemIdLst: List[String]): Boolean = {
     var flag = true //代表不需要被移除
     val itemArr = item.split(",")
@@ -576,12 +586,6 @@ object totalcoding_1 {
     )
 
     return flag
-  }
-
-  def deleteExistPath(pathRaw: String) {
-    val outPut = new Path(pathRaw)
-    val hdfs = FileSystem.get(URI.create(pathRaw), new Configuration())
-    if (hdfs.exists(outPut)) hdfs.delete(outPut, true)
   }
 
   def other_seg_coding(configFile: List[Array[String]], testFile: List[Array[String]],
