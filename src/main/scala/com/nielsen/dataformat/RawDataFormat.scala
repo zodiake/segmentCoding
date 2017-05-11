@@ -24,13 +24,13 @@ object RawDataFormat {
       year = args(2)
       dataSrc = args(3) //TELECOM//苏宁易购
     } else if (args.length == 3) {
-      if (args(2) == "RedBaby") {
+      if (args(2) == "REDBABY") {
         pathRaw = args(0)
-        dataSrc = "RedBaby"
+        dataSrc = "REDBABY"
         year = args(1)
-      } else if (args(2) == "JDNEW") {
+      } else if (args(2) == "JDFULL") {
         pathRaw = args(0)
-        dataSrc = "JDNew"
+        dataSrc = "JDFULL"
         pathUni = args(1) // website code map
       } else {
         pathRaw = args(0)
@@ -70,7 +70,7 @@ object RawDataFormat {
       storeCode = storeCodeArr.apply(0)
     }
 
-    if (dataSrc == "RedBaby") {
+    if (dataSrc == "REDBABY") {
       val data = sc.textFile(pathRaw).map(_.split("\t")).filter(i => i.length >= 4).map {
         i =>
           val r = RedBaby(i(0), i(1), i(2), i(3))
@@ -269,7 +269,7 @@ object RawDataFormat {
       result.saveAsTextFile(pathRaw.concat(".REFORMAT"))
     }
 
-    if (dataSrc == "JDNew") {
+    if (dataSrc == "JDFULL") {
       //新的ｊｄ数据多了一列年月，忽略即可
       val jdRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 14)
       val categoryLevel2Map = sc.broadcast(sc.textFile("hdfs://10.250.33.107:9000/CONF_DATA/JDMODEL_CONFIG.TXT").map(_.split(",")).map(i => (i(0), i(1))).collectAsMap()).value

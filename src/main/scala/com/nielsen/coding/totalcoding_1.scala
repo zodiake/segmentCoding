@@ -196,7 +196,7 @@ object totalcoding_1 {
 
     val packsize_conf = itemmaster_packsize(catCode, configFileNew)
     if (packsizeFlg) {
-      if (t == "tmtb") {
+      if (t == "TMTB") {
         def packsize(str: String): String = {
           val pack = packsize_conf.map { y =>
             val r = codingFunc.PacksizeCoding(str, y, List())
