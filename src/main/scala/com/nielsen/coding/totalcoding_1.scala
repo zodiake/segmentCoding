@@ -313,7 +313,7 @@ object totalcoding_1 {
       //bunded seg coding
       for (seg <- finalSeglst) {
         if (catCode == "FB" && seg == "CAPACITY") {
-          if (t == "tmtb") {
+          if (t == "TMTB") {
             val capacity_conf = configFileNew.filter(x => x(3) == "CAPACITY" && x(1) == "FB")
             val capacityno = capacity_conf.head(2)
             val p1 = try {
@@ -339,7 +339,7 @@ object totalcoding_1 {
           } else {
             val capacity_conf = configFileNew.filter(x => x(3) == "CAPACITY" && x(1) == "FB")
             val capacityno = capacity_conf.head(2)
-            val capacity_result = capacity_conf.filter(x => codingFunc.checkprice(item.packsize.replace("ML", "").toString, x(5)))
+            val capacity_result = capacity_conf.filter(x => codingFunc.checkprice(item.packsize.replace("ML", ""), x(5)))
             if (capacity_result.isEmpty || capacity_result.size > 1) {
               item_result = (item.ITEMID + "," + capacityno + "," + "UNKNOWN" + "," + "UNKNOWN" + "," + item.perCode + "," + item.storeCode) :: item_result
             } else {
