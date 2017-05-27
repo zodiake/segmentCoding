@@ -5,17 +5,16 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 /*
  * update category level1 for TMTB
+ * arg(0):hdfs://hkgrherfpp016:9000/RAW_DATA/TMTB/20161412/TMTB.csv_1
+ * arg(1):hdfs://hkgrherfpp016:9000/CONF_DATA/ModelMapping
  */
 object TMTBFormat {
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf()
-    conf.setAppName("TMTBFormat")
+    //conf.setAppName("TMTBFormat")
     //conf.setMaster("local")
 
     val sc = new SparkContext(conf)
-
-    /*val desc = sc.textFile("C://Users//Mirra//Desktop//new 2")
-    val config = sc.textFile("C://Users//Mirra//Desktop//config")*/
 
     val desc = sc.textFile(args(0))
     val config = sc.textFile(args(1))
@@ -36,17 +35,13 @@ object TMTBFormat {
     val res = descFormat.map(row => {
       val array = row.split(",")
       if (array(3) == "B" || array(3) == "C")
-        if (array(12).indexOf("天猫超市") == 2)
+        if (array(12).indexOf("天猫超市") == 2 || array(0).indexOf("天猫超市") > -1)
           array(3) = "S"
       array.mkString(",")
     })
 
     res.saveAsTextFile(args(0) + ".FORMAT")
     filter.saveAsTextFile(args(0) + ".FILTER")
-
-    //res.take(1).foreach(println)
-    //println(descFormat)
-
   }
 
   def formatFunc(catelv123: String, configMap: Map[String, String]): String = {
@@ -55,6 +50,6 @@ object TMTBFormat {
     if (configMap.contains(catelv123)) {
       str = configMap.get(catelv123).get + "," + strlst(1) + "," + strlst(2)
     }
-    return str
+    str
   }
 }
