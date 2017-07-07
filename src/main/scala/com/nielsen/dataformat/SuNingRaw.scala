@@ -24,7 +24,7 @@ case class SuNingRaw(storeId: String,
     val unitPrice = if (salesVolumn == 0) 0 else salesValue / salesVolumn
     //storeId + "," + "\"" + city + "\"" + "," + itemCode + "," + storeCode + "," + "SUNING" + "," + prodCate.replace(",", "") + "," + EAN + "," + "" + "," + "" + "," + "\"" + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + desc.replace(",", "") + "\"" + "," + salesValue * 10000 + "," + 1 + "," + salesVolumn + "," + payValue * 10000 + "," + payValue * 10000 + "," + year.substring(0, 4) + "-" + year.substring(6) + "-" + "01" + "," + "\"" + " " + "\"" + "," + ""
     val newFormat =
-      s"""${storeId},"${city}",${itemCode},${storeCode},SUNING,${prodCate.replace(",", "")},${EAN},,,"","",,"${desc.replace(",", "")}",${unitPrice},1,${salesVolumn},${payValue * 10000},${unitPrice},${year.substring(0, 4)}-${year.substring(6)}-01," ", """
+      s"""${storeId},"${city}",${itemCode},${storeCode},SUNING,${prodCate.replace(",", "")},${EAN},,,"","",,"${desc.replace(",", "")}",${unitPrice},1,${salesVolumn},${payValue },${unitPrice},${year.substring(0, 4)}-${year.substring(6)}-01," ", """
     //val oldFormat = storeId + "," + "\"" + city + "\"" + "," + itemCode + "," + storeCode + "," + "SUNING" + "," + prodCate.replace(",", "") + "," + EAN + "," + "" + "," + "" + "," + "\"" + "\"" + "," + "\"" + "\"" + "," + "" + "," + "\"" + desc.replace(",", "") + "\"" + "," + salesValue * 10000 + "," + 1 + "," + salesVolumn + "," + payValue * 10000 + "," + payValue * 10000 + "," + year.substring(0, 4) + "-" + year.substring(6) + "-" + "01" + "," + "\"" + " " + "\"" + "," + ""
     newFormat
   }
