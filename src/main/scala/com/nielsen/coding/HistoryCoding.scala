@@ -20,7 +20,7 @@ import scala.util.control.Breaks.{break, breakable}
  * hdfs://hkgrherfpp016:9000/CONF_DATA/krasegment
  * tmtb
  */
-object totalcoding_1 {
+object HistoryCoding {
 
   def main(args: Array[String]) {
     if (args.length < 2) {
