@@ -214,7 +214,7 @@ class codingFunc extends java.io.Serializable {
       val rightString = itemdesc.drop(packpos + packname.length())
       val result = PacksizeCoding(rightString, packname, packlist)
       if (!rightString.isEmpty()) {
-        if (rightString.apply(0) == '*' || rightString.apply(0).toUpper == 'X') {
+        if (rightString.apply(0) == '*' || rightString.apply(0).toUpper == 'X'||rightString.apply(0).toString=="×") {
           rightPack = toRightCoding(rightString.drop(1), c)
         }
         else { rightPack = 1 }
