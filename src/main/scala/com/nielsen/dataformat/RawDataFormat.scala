@@ -272,7 +272,7 @@ object RawDataFormat {
     if (dataSrc == "JDFULL") {
       //新的ｊｄ数据多了一列年月，忽略即可
       val jdRaw = sc.textFile(pathRaw).filter(x => x.split("\t").length == 14)
-      val categoryLevel2Map = sc.broadcast(sc.textFile("hdfs://10.250.33.107:9000/CONF_DATA/JDMODEL_CONFIG.TXT").map(_.split(",")).map(i => (i(0), i(1))).collectAsMap()).value
+      val categoryLevel2Map = sc.broadcast(sc.textFile("hdfs://hkgrherfpp007:9000/CONF_DATA/JDMODEL_CONFIG.TXT").map(_.split(",")).map(i => (i(0), i(1))).collectAsMap()).value
       val rawRdd = jdRaw.map(raw => {
         val value = raw.split("\t")
         JDRaw(
