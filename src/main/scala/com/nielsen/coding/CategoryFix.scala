@@ -1,6 +1,9 @@
 package com.nielsen.coding
 
+import java.io.{BufferedReader, InputStreamReader}
+
 import org.apache.spark.{SparkConf, SparkContext}
+import scala.io.Source
 
 /*
  * args:cateogry文件位置 newItem文件位置 修正文件位置 最终存储路径
@@ -10,6 +13,11 @@ object CategoryFix {
   val categoryItemKey: Array[String] => (String, Array[String]) = a => (a(1), a)
   val newItemKey: Array[String] => (String, Array[String]) = a => (a(15), a)
   val fixKey: Array[String] => ((String, String, String), Array[String]) = a => ((a(2), a(1), a(3)), a)
+  val categoryList = readConf()
+
+  def readConf(): List[String] = {
+    Source.fromURL(getClass.getResource("/model_conf")).getLines().filter(!_.startsWith("#")).map(_.split(",")).map(_ (0)).toList
+  }
 
   def main(args: Array[String]): Unit = {
     val categoryUrl = args(0)
@@ -20,8 +28,9 @@ object CategoryFix {
     //conf.setAppName("categoryFix")
     //conf.setMaster("local[*]")
     val context = new SparkContext(conf)
+    val categoryListb = context.broadcast(categoryList)
     val categoryFile = context.textFile(categoryUrl).map(split andThen categoryItemKey)
-    val newItemFile = context.textFile(newItemUrl).map(split andThen newItemKey)
+    val newItemFile = context.textFile(newItemUrl).map(split andThen newItemKey).filter(i => categoryListb.value.indexOf(i._2.apply(5)) > 0)
     val fixItemFile = context.textFile(fixFileUrl).map(split andThen fixKey).collectAsMap()
 
     val joined = categoryFile.join(newItemFile).map(extractProductId)
