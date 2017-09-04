@@ -12,6 +12,7 @@
 机油,MOTOROIL072805.model,old,akka
 成人用品,ADULT.model,old,akka
 茶/咖啡/冲饮/饮料,COFF14.model,new,akka
+咖啡/麦片/冲饮,COFF14.model,new,akka
 奶粉/辅食/营养品,MILKPOWDER22.model,new,akka
 尿片/洗护/喂哺/推车床,DIAP.model,old,akka
 宠物/宠物食品及用品,PETFOOD.model,old,akka
