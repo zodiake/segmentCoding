@@ -31,7 +31,7 @@ object CategoryFix {
     val categoryListb = context.broadcast(categoryList)
     val categoryFile = context.textFile(categoryUrl).map(split andThen categoryItemKey)
     val newItemFile = context.textFile(newItemUrl).map(split andThen newItemKey)
-      .filter(i => categoryListb.value.indexOf(i._2.apply(5).toUpperCase) > 0)
+      .filter(i => categoryListb.value.indexOf(i._2.apply(5).toUpperCase) > -1)
     val fixItemFile = context.textFile(fixFileUrl).map(split andThen fixKey).collectAsMap()
 
     val joined = categoryFile.join(newItemFile).map(extractProductId)
@@ -45,7 +45,7 @@ object CategoryFix {
               raw.mkString(",")
             case Some(v) =>
               raw(0) = v(4)
-              raw.mkString(",")
+              raw.mkString(",") + ","
           }
       }
     })
