@@ -42,7 +42,7 @@ object CategoryFix {
         case (key, raw) =>
           fixItemFile.get(key) match {
             case None =>
-              raw.mkString(",")
+              raw.mkString(",") + ","
             case Some(v) =>
               raw(0) = v(4)
               raw.mkString(",") + ","
