@@ -25,6 +25,14 @@ object TMTBFormat {
       .map { x => (x._1, x._2(4) + "," + x._2(5) + "," + x._2(6), x._1.indexOf(x._2(4) + "," + x._2(5) + "," + x._2(6))) }
       .map { x => (x._1.substring(0, x._3), formatFunc(x._2, configMap), x._1.substring(x._3 + x._2.length())) }
       .map(x => x._1 + x._2 + x._3)
+      .map { i =>
+        val array = i.split(",")
+        array(9) = array(9).replaceAll("天猫", "TMALL")
+        array(10) = array(10).replaceAll("天猫", "TMALL")
+        array(12) = array(12).replaceAll("天猫", "TMALL")
+        array(19) = array(19).replaceAll("天猫", "TMALL")
+        array.mkString(",")
+      }
 
     val filter = desc.filter { x => x.split(",", -1).length < 20 }
     val util = new codingUtil
