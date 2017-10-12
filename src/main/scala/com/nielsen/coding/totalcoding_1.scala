@@ -11,14 +11,14 @@ import scala.util.control.Breaks.{break, breakable}
 
 /*
  *@param args
- * IMF
+ * IMF category ALL
  * hdfs://hkgrherfpp016:9000/CONF_DATA/SEGCONF
- * /home/zodiake/Downloads/test_file/ONE_LINE
+ * /home/zodiake/Downloads/test_file/ONE_LINE source
  * hdfs://hkgrherfpp016:9000/CONF_DATA/CATCONF
  * hdfs://hkgrherfpp016:9000/TEST/Raphael/RAPHAEL_ALL_JAR_TEST/TMTB_20171401.SEGCO
- * PACKSIZE
+ * PACKSIZE,BRAND,SUBBRAND,SEGMENT/ALL
  * hdfs://hkgrherfpp016:9000/CONF_DATA/krasegment
- * tmtb
+ * tmtb/other
  */
 object totalcoding_1 {
 
